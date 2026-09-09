@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Map as MapLibreMap, NavigationControl } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { getExtractionStatus, getSavedStatus, startExtraction, syncSavedBuildings } from '../api.js'
-import { floorSlices } from '../floors.js'
+import { floorSlices, shadowFeatures } from '../floors.js'
 
 // Keyless tile providers (same set as ParcelMap — no {r} placeholder).
 const TILES = {
@@ -83,6 +83,12 @@ export default function LidarMap({ canEdit = true, user = null }) {
   const renderFeatures = useMemo(() => floorSlices(features), [features])
   const renderRef = useRef(renderFeatures)
   renderRef.current = renderFeatures
+
+  // ground cast-shadows — computed from the raw building-level features so the
+  // length comes from each building's TOTAL height, not per-floor slices
+  const shadowFc = useMemo(() => shadowFeatures(features), [features])
+  const shadowsRef = useRef(shadowFc)
+  shadowsRef.current = shadowFc
 
   const selectedFeature = useMemo(
     () => features.find((f) => f.properties.building_id === selectedId) || null,
@@ -442,6 +448,7 @@ export default function LidarMap({ canEdit = true, user = null }) {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
     map.getSource('buildings')?.setData({ type: 'FeatureCollection', features: renderFeatures })
+    map.getSource('shadows')?.setData({ type: 'FeatureCollection', features: shadowFc })
   }, [renderFeatures])
 
   // highlight the selected building (yellow outline, incl. edit mode)
@@ -558,6 +565,7 @@ export default function LidarMap({ canEdit = true, user = null }) {
             ]),
           ),
           buildings: { type: 'geojson', data: EMPTY_FC },
+          shadows: { type: 'geojson', data: EMPTY_FC }, // ground cast-shadows
           draft: { type: 'geojson', data: EMPTY_FC },
           fpdraft: { type: 'geojson', data: EMPTY_FC }, // footprint reshape preview
           handles: { type: 'geojson', data: EMPTY_FC }, // draggable corner handles
@@ -569,6 +577,12 @@ export default function LidarMap({ canEdit = true, user = null }) {
             source: `base-${key}`,
             layout: { visibility: i === 0 ? 'visible' : 'none' },
           })),
+          { id: 'bldg-shadow', type: 'fill', source: 'shadows',
+            // dark ground polygon swept away from the sun — denser for taller buildings
+            paint: {
+              'fill-color': '#0d1321',
+              'fill-opacity': ['interpolate', ['linear'], ['get', 'height_m'], 0, 0.06, 8, 0.2, 40, 0.34],
+            } },
           { id: 'bldg-flat', type: 'fill', source: 'buildings',
             paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.15 } },
           { id: 'bldg-extrude', type: 'fill-extrusion', source: 'buildings',
@@ -576,7 +590,7 @@ export default function LidarMap({ canEdit = true, user = null }) {
               'fill-extrusion-color': ['get', 'color'],
               'fill-extrusion-height': ['get', 'height_m'],
               'fill-extrusion-base': ['coalesce', ['get', 'base_m'], 0],
-              'fill-extrusion-opacity': 0.95,
+              'fill-extrusion-opacity': 1,
               'fill-extrusion-vertical-gradient': true,
             } },
           { id: 'bldg-line', type: 'line', source: 'buildings',
@@ -620,6 +634,7 @@ export default function LidarMap({ canEdit = true, user = null }) {
       }
       map.setPaintProperty('bldg-line', 'line-color', tileStyleRef.current === 'light' ? '#3a3a3a' : '#ffffff')
       map.getSource('buildings').setData({ type: 'FeatureCollection', features: renderRef.current })
+      map.getSource('shadows')?.setData({ type: 'FeatureCollection', features: shadowsRef.current })
       map.fitBounds(bboxOf({ type: 'FeatureCollection', features: featuresRef.current }), { padding: 60, duration: 1200 })
     })
     map.on('click', 'bldg-extrude', (e) => {

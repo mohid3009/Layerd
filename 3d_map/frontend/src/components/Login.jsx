@@ -6,7 +6,7 @@ const ROLES = [
     id: 'citizen',
     title: 'Citizen',
     blurb: 'view your units, file disputes, inspect ownership history',
-    username: 'ramesh',
+    username: 'citizen1',
     password: 'citizen123',
     icon: '🏠',
   },
@@ -14,7 +14,7 @@ const ROLES = [
     id: 'surveyor',
     title: 'Surveyor',
     blurb: 'upload floor plans, split units, run conflict validation',
-    username: 'priya',
+    username: 'surveyor1',
     password: 'survey123',
     icon: '📐',
   },
@@ -22,7 +22,7 @@ const ROLES = [
     id: 'registrar',
     title: 'Registrar',
     blurb: 'review disputes, audit hash-chained ledgers, publish to NGDRS',
-    username: 'arun',
+    username: 'registrar1',
     password: 'register123',
     icon: '🏛️',
   },
@@ -68,8 +68,17 @@ export default function Login({ onLogin, onBack, initialRole = 'citizen' }) {
           </button>
         )}
         <div className="login-head">
-          <h1>Layerd</h1>
-          <p className="muted tiny">3D cadastral system · SIH26095</p>
+          <div className="brand-mark login-mark" aria-label="Layerd logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2 2 7l10 5 10-5-10-5Z" />
+              <path d="m2 12 10 5 10-5" />
+              <path d="m2 17 10 5 10-5" />
+            </svg>
+          </div>
+          <div>
+            <h1>Layerd</h1>
+            <p className="muted tiny">Government of India · National Urban Cadastre · Demo</p>
+          </div>
         </div>
 
         <div className="login-roles">

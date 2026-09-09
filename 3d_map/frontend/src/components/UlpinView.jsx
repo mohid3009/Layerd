@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
-import { getSavedBuildings, fetchUnits, generateUnits, deleteUnits } from '../api.js'
+import { getSavedBuildings, fetchUnits, generateUnits, deleteUnits, updateUnit, digipin, allUnits, demoBaseUlpin } from '../api.js'
 import BuildingsMap from './BuildingsMap.jsx'
 
 const FH = 3 // storey height used by the generator (m)
@@ -13,6 +13,20 @@ function floorColor(floorIndex, maxFloor) {
   if (floorIndex < 0) return '#595969' // basement grey
   const t = maxFloor <= 1 ? 0 : (floorIndex - 1) / (maxFloor - 1)
   return `hsl(216, 68%, ${28 + t * 30}%)`
+}
+
+// geographic bbox of a footprint — used for unit DIGIPIN lookups in search
+function bboxOf(feature) {
+  const ring = feature?.geometry?.coordinates?.[0]
+  if (!ring?.length) return null
+  const lats = ring.map((c) => c[1])
+  const lons = ring.map((c) => c[0])
+  return {
+    latMin: Math.min(...lats),
+    lonMin: Math.min(...lons),
+    spanLat: Math.max(...lats) - Math.min(...lats),
+    spanLon: Math.max(...lons) - Math.min(...lons),
+  }
 }
 
 function UnitMesh({ unit, w, d, fh, color, selected, onPick }) {
@@ -61,6 +75,9 @@ export default function UlpinView({ session, initialBuilding = null }) {
   const [msg, setMsg] = useState(null)
   const [err, setErr] = useState(null)
   const [query, setQuery] = useState('') // building picker search
+  const [editingUnit, setEditingUnit] = useState(false)
+  const [unitDraft, setUnitDraft] = useState(null)
+  const canEditUnits = session.role === 'registrar'
 
   useEffect(() => {
     getSavedBuildings()
@@ -68,23 +85,73 @@ export default function UlpinView({ session, initialBuilding = null }) {
       .catch(() => {})
   }, [])
 
-  // searchable list of buildings for the picker (name or id, case-insensitive)
+  // search index over every generated unit: its ULPIN, owner and DIGIPIN
+  const unitIndex = useMemo(() => {
+    const byId = new Map(buildings.map((b) => [b.properties.building_id, b]))
+    return allUnits().map((u) => {
+      const f = byId.get(u.building_id)
+      let pin = ''
+      const ring = u.polygon || []
+      if (f && ring.length) {
+        const bb = bboxOf(f)
+        if (bb) {
+          const cx = ring.reduce((s, p) => s + p[0], 0) / ring.length
+          const cy = ring.reduce((s, p) => s + p[1], 0) / ring.length
+          pin = digipin(bb.latMin + cy * bb.spanLat, bb.lonMin + cx * bb.spanLon)
+        }
+      }
+      return {
+        buildingId: u.building_id,
+        ulpin: u.unit_ulpin,
+        sub: `${u.owner_name} · ${u.validation_status}${pin ? ` · ${pin}` : ''}`,
+        hay: `${u.unit_ulpin} ${u.owner_name} ${pin}`.toLowerCase(),
+      }
+    })
+  }, [buildings, units]) // units dep → reindex after generate/clear
+
+  // searchable list of buildings for the picker — name/id, base ULPIN,
+  // owner names, unit ULPINs and unit DIGIPINs (case-insensitive)
   const candidates = useMemo(() => {
     const needle = query.trim().toLowerCase()
     const props = buildings.map((b) => b.properties)
-    if (!needle) return props
-    return props.filter(
-      (p) =>
+    if (!needle) return props.map((p) => ({ p }))
+    const out = []
+    for (const p of props) {
+      if (
         (p.name || '').toLowerCase().includes(needle) ||
-        (p.building_id || '').toLowerCase().includes(needle),
-    )
-  }, [buildings, query])
+        (p.building_id || '').toLowerCase().includes(needle)
+      ) {
+        out.push({ p })
+        continue
+      }
+      const base = demoBaseUlpin(p.building_id)
+      if (base.toLowerCase().includes(needle)) {
+        out.push({ p, note: base })
+        continue
+      }
+      const hits = unitIndex.filter(
+        (e) => e.buildingId === p.building_id && e.hay.includes(needle),
+      )
+      if (hits.length) {
+        out.push({
+          p,
+          note: hits[0].ulpin,
+          sub:
+            hits.length > 1
+              ? `${hits[0].sub} · +${hits.length - 1} more`
+              : hits[0].sub,
+          ulpin: hits[0].ulpin,
+        })
+      }
+    }
+    return out
+  }, [buildings, query, unitIndex])
 
   const selected = buildings.find((b) => b.properties.building_id === selId) || null
 
-  const selectBuilding = (bid) => {
+  const selectBuilding = (bid, ulpin = null) => {
     setSelId(bid)
-    setSelUlpin(null)
+    setSelUlpin(ulpin)
     setUnits([])
     setMsg(null)
     setErr(null)
@@ -129,6 +196,37 @@ export default function UlpinView({ session, initialBuilding = null }) {
       .catch(() => {})
   }
 
+  // leave edit mode whenever the selected unit or building changes
+  useEffect(() => setEditingUnit(false), [selUlpin, selId])
+
+  const startUnitEdit = () => {
+    if (!selUnit) return
+    setUnitDraft({
+      owner_name: selUnit.owner_name,
+      rights_type: selUnit.rights_type,
+      area_sqm: selUnit.area_sqm,
+      validation_status: selUnit.validation_status,
+    })
+    setEditingUnit(true)
+  }
+
+  const saveUnitEdits = () => {
+    if (!selId || !selUnit || !unitDraft) return
+    setBusy(true)
+    setErr(null)
+    updateUnit(selId, selUnit.unit_ulpin, unitDraft)
+      .then((r) => {
+        setUnits(r.units)
+        setEditingUnit(false)
+        setMsg(`${selUnit.unit_ulpin} updated`)
+        setBusy(false)
+      })
+      .catch((e) => {
+        setErr(e.message)
+        setBusy(false)
+      })
+  }
+
   // footprint dimensions in metres (for the 3D mapping)
   const dims = useMemo(() => {
     if (!selected) return null
@@ -143,6 +241,44 @@ export default function UlpinView({ session, initialBuilding = null }) {
   }, [selected])
 
   const selUnit = units.find((u) => u.unit_ulpin === selUlpin) || null
+
+  // geographic frame of the footprint — maps unit polygons back to lat/lon
+  const geo = useMemo(() => {
+    if (!selected) return null
+    const ring = selected.geometry.coordinates[0]
+    const lats = ring.map((c) => c[1])
+    const lons = ring.map((c) => c[0])
+    const latMin = Math.min(...lats)
+    const latMax = Math.max(...lats)
+    const lonMin = Math.min(...lons)
+    const lonMax = Math.max(...lons)
+    const latMid = (latMin + latMax) / 2
+    // real footprint area (m²) via the shoelace formula on a local metre frame
+    const mx = (lon) => (lon - lonMin) * 111320 * Math.cos((latMid * Math.PI) / 180)
+    const my = (lat) => (lat - latMin) * 111320
+    let a2 = 0
+    for (let i = 0; i < ring.length - 1; i++) {
+      a2 += mx(ring[i][0]) * my(ring[i + 1][1]) - mx(ring[i + 1][0]) * my(ring[i][1])
+    }
+    return {
+      latMin, latMax, lonMin, lonMax,
+      spanLat: latMax - latMin,
+      spanLon: lonMax - lonMin,
+      areaSqm: Math.abs(a2 / 2),
+    }
+  }, [selected])
+  const centroid = geo
+    ? { lat: (geo.latMin + geo.latMax) / 2, lon: (geo.lonMin + geo.lonMax) / 2 }
+    : null
+  // centroid lat/lon + DIGIPIN of a unit (polygon is normalised 0..1 over the bbox)
+  const unitGeo = (u) => {
+    if (!geo || !u?.polygon?.length) return null
+    const cx = u.polygon.reduce((s, p) => s + p[0], 0) / u.polygon.length
+    const cy = u.polygon.reduce((s, p) => s + p[1], 0) / u.polygon.length
+    const lon = geo.lonMin + cx * geo.spanLon
+    const lat = geo.latMin + cy * geo.spanLat
+    return { lat, lon, digipin: digipin(lat, lon) }
+  }
 
   // before units are generated, show the building's sections as mock slabs —
   // the chosen building is always fully visible in 3D
@@ -263,7 +399,7 @@ export default function UlpinView({ session, initialBuilding = null }) {
 
         <aside className="sidebar">
           {!selId && (
-            <div className="panel-section">
+            <div className="panel-section acc-blue">
               <h3>3D ULPIN explorer</h3>
               {buildings.length === 0 ? (
                 <>
@@ -290,21 +426,22 @@ export default function UlpinView({ session, initialBuilding = null }) {
                   </p>
                   <input
                     className="search"
-                    placeholder="search by name or id…"
+                    placeholder="search name, id, owner, ULPIN or DIGIPIN…"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                   />
                   <div className="picker-list">
-                    {candidates.map((p) => (
+                    {candidates.map(({ p, note, sub, ulpin }) => (
                       <div
                         key={p.building_id}
                         className="nav-row"
-                        onClick={() => selectBuilding(p.building_id)}
+                        title={sub || p.building_id}
+                        onClick={() => selectBuilding(p.building_id, ulpin || null)}
                       >
                         <span className="session-label" title={p.building_id}>
                           {p.name || p.building_id}
                         </span>
-                        <span className="muted tiny">{p.stories ?? '—'} str</span>
+                        <span className="muted tiny">{note || `${p.stories ?? '—'} str`}</span>
                         <span className="enter-hint tiny">open →</span>
                       </div>
                     ))}
@@ -317,7 +454,7 @@ export default function UlpinView({ session, initialBuilding = null }) {
             </div>
           )}
           {selected && (
-            <div className="panel-section">
+            <div className="panel-section acc-brass">
               <h3>base ULPIN</h3>
               <p className="ulpin">{baseUlpin || '— generate units to mint the base ULPIN —'}</p>
               {canManage && (
@@ -355,8 +492,26 @@ export default function UlpinView({ session, initialBuilding = null }) {
             </div>
           )}
 
+          {selected && geo && (
+            <div className="panel-section acc-mauve">
+              <h3>building details</h3>
+              <table className="kv">
+                <tbody>
+                  <tr><td>name</td><td>{selected.properties.name || selId}</td></tr>
+                  <tr><td>building id</td><td className="mono tiny">{selId}</td></tr>
+                  <tr><td>footprint</td><td>{Math.round(geo.areaSqm).toLocaleString('en-IN')} m²</td></tr>
+                  <tr><td>storeys</td><td>{selected.properties.stories || 1}{(selected.properties.basements || 0) > 0 ? ` (+${selected.properties.basements} basement)` : ''}</td></tr>
+                  <tr><td>storey height</td><td>{FH} m</td></tr>
+                  <tr><td>units</td><td>{units.length || '— not generated —'}</td></tr>
+                  <tr><td>centroid</td><td className="mono tiny">{centroid.lat.toFixed(5)}, {centroid.lon.toFixed(5)}</td></tr>
+                  <tr><td>DIGIPIN</td><td className="mono">{digipin(centroid.lat, centroid.lon)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {byFloor.length > 0 && (
-            <div className="panel-section">
+            <div className="panel-section acc-green">
               <h3>units ({units.length})</h3>
               {byFloor.map(([floor, us]) => (
                 <div key={floor}>
@@ -372,7 +527,7 @@ export default function UlpinView({ session, initialBuilding = null }) {
                       <span className="session-label mono tiny" title={u.unit_ulpin}>
                         {u.unit_ulpin}
                       </span>
-                      <span className="muted tiny">{u.owner_name}</span>
+                      <span className="muted tiny">{u.owner_name} · {u.area_sqm} m²</span>
                     </div>
                   ))}
                 </div>
@@ -381,31 +536,96 @@ export default function UlpinView({ session, initialBuilding = null }) {
           )}
 
           {selUnit && (
-            <div className="panel-section">
-              <h3>unit details</h3>
-              <table className="kv">
-                <tbody>
-                  <tr><td>ULPIN</td><td className="mono">{selUnit.unit_ulpin}</td></tr>
-                  <tr><td>floor</td><td>{selUnit.floor_index < 0 ? `basement ${-selUnit.floor_index}` : `floor ${selUnit.floor_index}`}</td></tr>
-                  <tr><td>unit no.</td><td>U{selUnit.unit_no}</td></tr>
-                  <tr><td>area</td><td>{selUnit.area_sqm} m²</td></tr>
-                  <tr><td>rights</td><td>{selUnit.rights_type}</td></tr>
-                  <tr><td>owner</td><td>{selUnit.owner_name}</td></tr>
-                  <tr><td>owner id</td><td className="mono">{selUnit.owner_id}</td></tr>
-                  <tr><td>status</td><td className={selUnit.validation_status === 'conflict' ? 'status-pending' : 'status-confirmed'}>{selUnit.validation_status}</td></tr>
-                  <tr><td>segmentation</td><td>{selUnit.segmentation}</td></tr>
-                </tbody>
-              </table>
+            <div className="panel-section acc-slate">
+              <div className="section-head">
+                <h3>unit details</h3>
+                {canEditUnits && !editingUnit && (
+                  <button className="btn tiny" onClick={startUnitEdit}>edit unit</button>
+                )}
+              </div>
+              {editingUnit ? (
+                <div className="edit-form">
+                  <label>
+                    <span>owner name</span>
+                    <input
+                      value={unitDraft.owner_name}
+                      onChange={(e) => setUnitDraft({ ...unitDraft, owner_name: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>rights type</span>
+                    <select
+                      value={unitDraft.rights_type}
+                      onChange={(e) => setUnitDraft({ ...unitDraft, rights_type: e.target.value })}
+                    >
+                      <option value="freehold">freehold</option>
+                      <option value="leasehold">leasehold</option>
+                      <option value="common">common</option>
+                      <option value="air-rights">air-rights</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>area (m²)</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={unitDraft.area_sqm}
+                      onChange={(e) => setUnitDraft({ ...unitDraft, area_sqm: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>status</span>
+                    <select
+                      value={unitDraft.validation_status}
+                      onChange={(e) => setUnitDraft({ ...unitDraft, validation_status: e.target.value })}
+                    >
+                      <option value="confirmed">confirmed</option>
+                      <option value="conflict">conflict</option>
+                      <option value="pending review">pending review</option>
+                    </select>
+                  </label>
+                  <div className="btn-row">
+                    <button className="btn primary" disabled={busy} onClick={saveUnitEdits}>
+                      save changes
+                    </button>
+                    <button className="btn" onClick={() => setEditingUnit(false)}>cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <table className="kv">
+                  <tbody>
+                    <tr><td>ULPIN</td><td className="mono">{selUnit.unit_ulpin}</td></tr>
+                    <tr><td>DIGIPIN</td><td className="mono">{unitGeo(selUnit)?.digipin || '—'}</td></tr>
+                    <tr><td>building</td><td>{selected?.properties.name || selId}</td></tr>
+                    <tr><td>floor</td><td>{selUnit.floor_index < 0 ? `basement ${-selUnit.floor_index}` : `floor ${selUnit.floor_index}`}</td></tr>
+                    <tr><td>z-range</td><td>{selUnit.floor_index * FH} m → {(selUnit.floor_index + 1) * FH} m</td></tr>
+                    <tr><td>centroid</td><td className="mono tiny">{unitGeo(selUnit) ? `${unitGeo(selUnit).lat.toFixed(6)}, ${unitGeo(selUnit).lon.toFixed(6)}` : '—'}</td></tr>
+                    <tr><td>unit no.</td><td>U{selUnit.unit_no}</td></tr>
+                    <tr><td>area</td><td>{selUnit.area_sqm} m²</td></tr>
+                    <tr><td>rights</td><td>{selUnit.rights_type}</td></tr>
+                    <tr><td>owner</td><td>{selUnit.owner_name}</td></tr>
+                    <tr><td>owner id</td><td className="mono">{selUnit.owner_id}</td></tr>
+                    <tr><td>status</td><td className={selUnit.validation_status === 'conflict' ? 'status-pending' : 'status-confirmed'}>{selUnit.validation_status}</td></tr>
+                    <tr><td>segmentation</td><td>{selUnit.segmentation}</td></tr>
+                    {selUnit.updated_at && (
+                      <tr><td>last edit</td><td className="tiny">by {selUnit.last_edited_by} · {new Date(selUnit.updated_at).toLocaleString()}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
 
           {selSlab && (
-            <div className="panel-section">
+            <div className="panel-section acc-clay">
               <h3>section details</h3>
               <table className="kv">
                 <tbody>
                   <tr><td>section</td><td>{selSlab.floor_index < 0 ? `basement ${-selSlab.floor_index}` : `floor ${selSlab.floor_index}`}</td></tr>
+                  <tr><td>building</td><td>{selected?.properties.name || selId}</td></tr>
                   <tr><td>z-range</td><td>{selSlab.floor_index * FH} m → {(selSlab.floor_index + 1) * FH} m</td></tr>
+                  <tr><td>footprint</td><td>{geo ? `${Math.round(geo.areaSqm).toLocaleString('en-IN')} m²` : '—'}</td></tr>
+                  <tr><td>DIGIPIN</td><td className="mono">{centroid ? digipin(centroid.lat, centroid.lon) : '—'}</td></tr>
                   <tr><td>ULPINs</td><td>generate units to populate this section</td></tr>
                 </tbody>
               </table>

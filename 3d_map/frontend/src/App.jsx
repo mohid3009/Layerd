@@ -1,13 +1,13 @@
 import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, NavLink, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
-import { getSavedBuildings, getSessions, deleteSession, updateBuilding, confirmBuildingEdit, deleteBuilding as deleteBuildingApi, getRegion } from './api.js'
+import { getSavedBuildings, getSessions, deleteSession, updateBuilding, confirmBuildingEdit, deleteBuilding as deleteBuildingApi, getRegion, allUnits, demoBaseUlpin, digipin } from './api.js'
 import Landing from './components/Landing.jsx'
+import CitizenDashboard from './components/CitizenDashboard.jsx'
 import Login from './components/Login.jsx'
 import BuildingsMap from './components/BuildingsMap.jsx'
 
 // heavy libs (maplibre ~800 KB, three + drei ~1 MB) load only on the pages /
 // views that actually need them
-const LidarMap = lazy(() => import('./components/LidarMap.jsx'))
 const UlpinView = lazy(() => import('./components/UlpinView.jsx'))
 
 const PageFallback = () => <div className="loading muted">loading…</div>
@@ -51,16 +51,6 @@ export default function App() {
           session ? <UlpinPage session={session} onLogout={() => updateSession(null)} /> : <Navigate to="/login" replace />
         }
       />
-      <Route
-        path="/lidar"
-        element={
-          session
-            ? session.role === 'citizen'
-              ? <Navigate to="/dashboard" replace />
-              : <LidarPage session={session} onLogout={() => updateSession(null)} />
-            : <Navigate to="/login" replace />
-        }
-      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
@@ -91,31 +81,31 @@ function LoginRoute({ session, setSession }) {
 function Topbar({ session, onLogout, children }) {
   return (
     <header className="topbar">
-      <div>
-        <h1>Layerd</h1>
-        <span className="muted tiny">3D cadastral system · SIH26095</span>
+      <div className="brand">
+        <div className="brand-mark" aria-label="Layerd logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2 2 7l10 5 10-5-10-5Z" />
+            <path d="m2 12 10 5 10-5" />
+            <path d="m2 17 10 5 10-5" />
+          </svg>
+        </div>
+        <div className="brand-text">
+          <h1>Layerd</h1>
+          <span className="muted tiny">Government of India · National Urban Cadastre · Demo</span>
+        </div>
       </div>
       <nav className="mode-switch">
         <NavLink
           to="/dashboard"
           end
-          className={({ isActive }) => `btn ${isActive ? 'primary' : ''}`}
+          className={({ isActive }) => `btn nav-dash ${isActive ? 'primary' : ''}`}
           title="every building saved from your LiDAR scans"
         >
           dashboard
         </NavLink>
-        {session.role !== 'citizen' && (
-          <NavLink
-            to="/lidar"
-            className={({ isActive }) => `btn ${isActive ? 'primary' : ''}`}
-            title="upload a .laz scan and extract buildings from it"
-          >
-            LiDAR scan
-          </NavLink>
-        )}
         <NavLink
           to="/ulpin"
-          className={({ isActive }) => `btn ${isActive ? 'primary' : ''}`}
+          className={({ isActive }) => `btn nav-ulpin ${isActive ? 'primary' : ''}`}
           title="3D unit tree — floors, ULPINs, owners per building"
         >
           ULPIN units
@@ -133,6 +123,20 @@ function Topbar({ session, onLogout, children }) {
       </div>
     </header>
   )
+}
+
+// geographic bbox of one footprint — used for unit DIGIPIN lookups in search
+function bboxOfFeature(feature) {
+  const ring = feature?.geometry?.type === 'Polygon' ? feature.geometry.coordinates[0] : null
+  if (!ring?.length) return null
+  const lats = ring.map((c) => c[1])
+  const lons = ring.map((c) => c[0])
+  return {
+    latMin: Math.min(...lats),
+    lonMin: Math.min(...lons),
+    spanLat: Math.max(...lats) - Math.min(...lats),
+    spanLon: Math.max(...lons) - Math.min(...lons),
+  }
 }
 
 function Dashboard({ session, onLogout }) {
@@ -315,11 +319,87 @@ function Dashboard({ session, onLogout }) {
       .catch((e) => console.error('session delete failed:', e))
   }
 
-  const canScan = session.role !== 'citizen' // citizens view saved scans only
   const canEdit = session.role === 'surveyor' // surveyor manages scan sessions
   const isRegistrar = session.role === 'registrar'
+  const isCitizen = session.role === 'citizen'
   const canEditBuildings = session.role !== 'citizen' // surveyor or registrar
   const navigate = useNavigate()
+  // citizens land on their portfolio dashboard; the map is one click away
+  const [citizenMapView, setCitizenMapView] = useState(false)
+
+  // ── registrar search: buildings by name/id, base ULPIN, unit ULPIN,
+  // owner name or DIGIPIN ──────────────────────────────────────────────────
+  const [searchQ, setSearchQ] = useState('')
+  const [searchFocus, setSearchFocus] = useState(false)
+  const [unitsVersion, setUnitsVersion] = useState(0)
+  useEffect(() => {
+    const bump = () => setUnitsVersion((v) => v + 1)
+    window.addEventListener('demo-units-changed', bump)
+    return () => window.removeEventListener('demo-units-changed', bump)
+  }, [])
+
+  const unitIndex = useMemo(() => {
+    const byId = new Map(features.map((f) => [f.properties.building_id, f]))
+    return allUnits().map((u) => {
+      const f = byId.get(u.building_id)
+      let pin = ''
+      const ring = u.polygon || []
+      if (f && ring.length) {
+        const bb = bboxOfFeature(f)
+        if (bb) {
+          const cx = ring.reduce((s, p) => s + p[0], 0) / ring.length
+          const cy = ring.reduce((s, p) => s + p[1], 0) / ring.length
+          pin = digipin(bb.latMin + cy * bb.spanLat, bb.lonMin + cx * bb.spanLon)
+        }
+      }
+      return {
+        buildingId: u.building_id,
+        ulpin: u.unit_ulpin,
+        sub: `${u.owner_name} · ${u.validation_status}${pin ? ` · ${pin}` : ''}`,
+        hay: `${u.unit_ulpin} ${u.owner_name} ${pin}`.toLowerCase(),
+      }
+    })
+  }, [features, unitsVersion])
+
+  const searchResults = useMemo(() => {
+    const needle = searchQ.trim().toLowerCase()
+    if (!needle) return []
+    const out = []
+    for (const f of features) {
+      const p = f.properties
+      if (
+        (p.name || '').toLowerCase().includes(needle) ||
+        (p.building_id || '').toLowerCase().includes(needle)
+      ) {
+        out.push({ id: p.building_id, name: p.name || p.building_id, note: `${p.stories ?? '—'} str`, sub: null })
+        continue
+      }
+      const base = demoBaseUlpin(p.building_id)
+      if (base.toLowerCase().includes(needle)) {
+        out.push({ id: p.building_id, name: p.name || p.building_id, note: base, sub: null })
+        continue
+      }
+      const hits = unitIndex.filter((e) => e.buildingId === p.building_id && e.hay.includes(needle))
+      if (hits.length) {
+        out.push({
+          id: p.building_id,
+          name: p.name || p.building_id,
+          note: hits[0].ulpin,
+          sub: hits.length > 1 ? `${hits[0].sub} · +${hits.length - 1} more` : hits[0].sub,
+        })
+      }
+    }
+    return out.slice(0, 8)
+  }, [searchQ, features, unitIndex])
+
+  const goToSearchResult = (r) => {
+    setSearchQ('')
+    setSearchFocus(false)
+    setSelCountry(null)
+    setSelRegion(null)
+    setFocusSid(null)
+    setSelectedId(r.id)
+  }
 
   const showToast = (kind, text) => {
     setToast({ kind, text })
@@ -533,24 +613,72 @@ function Dashboard({ session, onLogout }) {
     }
   }, [visibleFeatures])
 
+  // citizens land on their portfolio dashboard; the map is one click away
+  if (isCitizen && !citizenMapView) {
+    return (
+      <div className="app">
+        <Topbar session={session} onLogout={onLogout} />
+        <CitizenDashboard
+          session={session}
+          onOpenMap={(id) => {
+            setSelCountry(null)
+            setSelRegion(null)
+            setFocusSid(null)
+            setSelectedId(id || null)
+            setCitizenMapView(true)
+          }}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="app">
-      <Topbar session={session} onLogout={onLogout} />
+      <Topbar session={session} onLogout={onLogout}>
+        {isRegistrar && (
+          <div className="top-search">
+            <input
+              className="search"
+              placeholder="search building, owner, ULPIN or DIGIPIN…"
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+              onFocus={() => setSearchFocus(true)}
+              onBlur={() => setTimeout(() => setSearchFocus(false), 150)}
+            />
+            {searchFocus && searchQ.trim() && (
+              <div className="search-results">
+                {searchResults.length === 0 && (
+                  <p className="muted tiny" style={{ padding: '8px 10px', margin: 0 }}>
+                    no matches for “{searchQ.trim()}”.
+                  </p>
+                )}
+                {searchResults.map((r) => (
+                  <div
+                    key={r.id}
+                    className="nav-row"
+                    title={r.sub || r.id}
+                    onMouseDown={() => goToSearchResult(r)}
+                  >
+                    <span className="session-label" title={r.id}>{r.name}</span>
+                    <span className="muted tiny">{r.note}</span>
+                    <span className="enter-hint tiny">go →</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </Topbar>
       {toast && <div className={`toast ${toast.kind}`}>{toast.text}</div>}
 
       {guideOpen && state === 'ready' && (
         <div className="guide-strip">
           <span className="guide-title tiny muted">how it works</span>
-          {canScan && (
-            <span className="guide-step tiny">
-              <b>1</b> run a <NavLink to="/lidar">LiDAR scan</NavLink> on a .laz point cloud
-            </span>
-          )}
           <span className="guide-step tiny">
-            <b>{canScan ? 2 : 1}</b> click any building on the map for details &amp; edits
+            <b>1</b> click any building on the map for details &amp; edits
           </span>
           <span className="guide-step tiny">
-            <b>{canScan ? 3 : 2}</b> open its <NavLink to="/ulpin">ULPIN units</NavLink> — floors, owners, status
+            <b>2</b> open its <NavLink to="/ulpin">ULPIN units</NavLink> — floors, owners, status
           </span>
           <span style={{ flex: 1 }} />
           <button className="btn tiny" onClick={dismissGuide}>
@@ -561,7 +689,7 @@ function Dashboard({ session, onLogout }) {
 
       <div className="parcel-strip">
         <span className="muted tiny">
-          buildings from saved LiDAR scans — pan the map anywhere, or run a new scan
+          demo city — Chennai · T. Nagar buildings from OpenStreetMap — pan, zoom &amp; tilt freely
         </span>
         <span style={{ flex: 1 }} />
         {state === 'ready' && stats && (
@@ -572,8 +700,10 @@ function Dashboard({ session, onLogout }) {
             ⚑ {pendingFeatures.length} edit{pendingFeatures.length > 1 ? 's' : ''} awaiting confirmation
           </span>
         )}
+        {isCitizen && (
+          <button className="btn" onClick={() => setCitizenMapView(false)}>← my properties</button>
+        )}
         <button className="btn" onClick={() => setReloadKey((k) => k + 1)}>refresh</button>
-        {canScan && <NavLink to="/lidar" className="btn">new scan</NavLink>}
       </div>
 
       <main className="workspace">
@@ -589,24 +719,20 @@ function Dashboard({ session, onLogout }) {
           )}
           {state === 'ready' && !visibleFeatures.length && (
             <div className="map-note muted tiny">
-              no buildings in this view — go back to all areas or run a new scan
+              no buildings in this view — go back to all areas
             </div>
           )}
-          {state === 'loading' && <div className="loading muted">loading saved buildings…</div>}
+          {state === 'loading' && <div className="loading muted">loading the city…</div>}
           {state === 'empty' && (
             <div className="lidar-empty muted">
               <h3>No buildings yet</h3>
-              <p>run a LiDAR scan to generate building footprints and heights — they will appear here, stored in PostGIS.</p>
-              {canScan && <NavLink to="/lidar" className="btn primary">open LiDAR scan</NavLink>}
+              <p>the demo dataset is empty — clear this browser's localStorage to restore the baked Chennai data.</p>
             </div>
           )}
           {state === 'unavailable' && (
             <div className="lidar-empty muted">
-              <h3>PostGIS unavailable</h3>
-              <p>
-                start PostgreSQL and refresh — saved buildings live in the <span className="mono">layerd</span> database.
-                retrying automatically every 5s…
-              </p>
+              <h3>Demo data failed to load</h3>
+              <p>refresh the page to retry.</p>
               {unavailableErr && <p className="error mono tiny">reason: {unavailableErr}</p>}
               <button className="btn" onClick={() => setReloadKey((k) => k + 1)}>retry now</button>
             </div>
@@ -616,10 +742,10 @@ function Dashboard({ session, onLogout }) {
         <aside className="sidebar">
           {isRegistrar && (
             <div className="tab-btns">
-              <button className={`btn ${panelTab === 'sessions' ? 'primary' : ''}`} onClick={() => setPanelTab('sessions')}>
+              <button className={`btn nav-sessions ${panelTab === 'sessions' ? 'primary' : ''}`} onClick={() => setPanelTab('sessions')}>
                 scan sessions
               </button>
-              <button className={`btn ${panelTab === 'confirmations' ? 'primary' : ''}`} onClick={() => setPanelTab('confirmations')}>
+              <button className={`btn nav-confirmations ${panelTab === 'confirmations' ? 'primary' : ''}`} onClick={() => setPanelTab('confirmations')}>
                 ⚑ confirmations{pendingFeatures.length ? ` (${pendingFeatures.length})` : ''}
               </button>
             </div>
@@ -627,7 +753,7 @@ function Dashboard({ session, onLogout }) {
 
           {(panelTab === 'sessions' || !isRegistrar) && (
             <>
-          <div className="panel-section">
+          <div className="panel-section acc-blue">
             <h3>
               {selRegion ? (
                 <button className="btn tiny" onClick={() => setSelRegion(null)}>← {selCountry}</button>
@@ -723,7 +849,7 @@ function Dashboard({ session, onLogout }) {
           )}
 
           {isRegistrar && panelTab === 'confirmations' && (
-            <div className="panel-section">
+            <div className="panel-section acc-clay">
               <h3>pending confirmations ({pendingFeatures.length})</h3>
               {pendingFeatures.length ? (
                 pendingFeatures.map((f) => {
@@ -750,7 +876,7 @@ function Dashboard({ session, onLogout }) {
 
           {(panelTab === 'sessions' || !isRegistrar) && (
             <>
-          <div className="panel-section">
+          <div className="panel-section acc-green">
             <h3>saved buildings</h3>
             {stats ? (
               <table className="kv">
@@ -774,7 +900,7 @@ function Dashboard({ session, onLogout }) {
           )}
 
           {selected && (
-            <div className="panel-section">
+            <div className="panel-section acc-brass">
               <h3>building details</h3>
               <table className="kv">
                 <tbody>
@@ -908,20 +1034,6 @@ function Dashboard({ session, onLogout }) {
           )}
         </aside>
       </main>
-    </div>
-  )
-}
-
-function LidarPage({ session, onLogout }) {
-  return (
-    <div className="app">
-      <Topbar session={session} onLogout={onLogout} />
-      <Suspense fallback={<PageFallback />}>
-        <LidarMap
-          canEdit={session.role !== 'citizen'} // surveyor or registrar
-          user={{ name: session.name, role: session.role, username: session.username }}
-        />
-      </Suspense>
     </div>
   )
 }
