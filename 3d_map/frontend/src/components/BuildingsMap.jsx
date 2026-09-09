@@ -51,6 +51,7 @@ export default function BuildingsMap({
   onSelect,
   canEdit = false,
   onFootprintDrawn = null,
+  ownedIds = null, // citizen view: building_ids the signed-in citizen owns
 }) {
   const [tileStyle, setTileStyle] = useState('satellite')
   const [drawMode, setDrawMode] = useState(false)
@@ -323,25 +324,47 @@ export default function BuildingsMap({
   }, [features])
 
   // selection highlight + zoom-to-building: the WHOLE selected building is
-  // repainted in a uniform highlight colour (saffron above ground, purple for
-  // basement levels), everything else dims back so it pops, and buildings
-  // with basements get a floating B×n indicator chip
+  // repainted in a uniform highlight colour (registrar: orange above ground /
+  // purple basements; citizen: indigo above ground), everything else dims to
+  // grey — and in citizen view owned buildings keep their colour with an
+  // indigo rim so "yours" is always identifiable.
   const basementMarkerRef = useRef(null)
+  const ownedListRef = useRef(ownedIds)
+  ownedListRef.current = ownedIds
+  const ownedKey = ownedIds ? ownedIds.join('|') : ''
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
     map.setFilter('bldg-selected', ['==', ['get', 'building_id'], selectedId || ''])
 
-    // the rest of the city turns slightly grey + semi-transparent while one
-    // building is selected
+    const ownedList = ownedListRef.current || []
+    // sentinel label keeps 'match' valid even when the citizen owns nothing
+    const ownedMatch = (t, f) =>
+      ['match', ['get', 'building_id'], ownedList.length ? ownedList : ['∅'], t, f]
+
+    // dim: selected full, owned slightly faded, everything else grey/ghost
     const dimExtrusions = selectedId
-      ? ['case', ['==', ['get', 'building_id'], selectedId], 1, 0.45]
+      ? ['case',
+          ['==', ['get', 'building_id'], selectedId], 1,
+          ownedMatch(0.85, 0.45)]
       : 1
     const dimLines = selectedId
-      ? ['case', ['==', ['get', 'building_id'], selectedId], 0.9, 0.18]
-      : 0.5
+      ? ['case',
+          ['==', ['get', 'building_id'], selectedId], 0.9,
+          ownedMatch(0.55, 0.18)]
+      : ownedList.length
+        ? ownedMatch(0.55, 0.28)
+        : 0.5
     map.setPaintProperty('bldg-extrude', 'fill-extrusion-opacity', dimExtrusions)
     map.setPaintProperty('bldg-line', 'line-opacity', dimLines)
+
+    // owned buildings wear an indigo rim (citizen view), even when unselected
+    map.setPaintProperty('bldg-line', 'line-color',
+      ownedList.length
+        ? ['case',
+            ['==', ['get', 'building_id'], selectedId || ''], '#FFFFFF',
+            ownedMatch('#8B93E8', 'rgba(255,255,255,0.5)')]
+        : '#FFFFFF')
 
     // ground footprints + cast shadows of the other buildings dim as well
     map.setPaintProperty('bldg-flat', 'fill-opacity',
@@ -350,15 +373,19 @@ export default function BuildingsMap({
     map.setPaintProperty('bldg-shadow', 'fill-opacity',
       selectedId ? ['case', ['==', ['get', 'building_id'], selectedId], shadowBase, 0.04] : shadowBase)
 
-    // repaint the selected building: ORANGE above ground, purple below —
-    // everything else is flat grey (set in the opacity block above)
+    // selected building: citizen -> indigo above ground (purple basements),
+    // registrar -> orange; everything else flat grey, owned keep their colour
+    const selAbove = ownedList.length ? '#5E6AD2' : '#FF8C1A'
     const selColors = selectedId
       ? ['case',
           ['==', ['get', 'building_id'], selectedId],
-          ['case', ['<', ['coalesce', ['get', 'floor'], 0], 0], '#8B5CF6', '#FF8C1A'],
-          '#77777C']
+          ['case', ['<', ['coalesce', ['get', 'floor'], 0], 0], '#8B5CF6', selAbove],
+          ownedMatch(['get', 'color'], '#77777C')]
       : ['get', 'color']
     map.setPaintProperty('bldg-extrude', 'fill-extrusion-color', selColors)
+
+    // selected outline follows the role accent
+    map.setPaintProperty('bldg-selected', 'line-color', ownedList.length ? '#8B93E8' : '#FF8A00')
 
     const EXPLODE_GAP = 5
     const sliceFloor = ['coalesce', ['get', 'floor'], 1]
@@ -414,7 +441,7 @@ export default function BuildingsMap({
       [[x0, y0], [x1, y1]],
       { padding: 120, maxZoom: 18.5, duration: 900, essential: true },
     )
-  }, [selectedId])
+  }, [selectedId, ownedKey])
 
   // free-draw mode bookkeeping (cursor, dblclick-zoom, pending shape)
   useEffect(() => {

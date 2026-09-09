@@ -142,8 +142,8 @@ export const deleteBuilding = async (buildingId) => {
 
 export const getRegion = async () => ({ country: 'India', region: 'Chennai, Tamil Nadu' })
 
-// ── citizen portfolio — deterministic demo ownership (1 in 37 buildings) ────
-export const citizenOwns = (buildingId) => stableHash(buildingId) % 37 === 0
+// ── citizen portfolio — deterministic demo ownership (exactly 3 buildings) ──
+export const citizenOwns = (buildingId) => stableHash(buildingId) % 1500 === 0
 export const citizenProperties = async () => {
   const fc = await applyMuts()
   return fc.features.filter((f) => citizenOwns(f.properties.building_id))

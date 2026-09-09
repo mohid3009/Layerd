@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { login } from '../api.js'
+import CubeMark from './CubeMark.jsx'
 
 const ROLES = [
   {
@@ -69,11 +71,7 @@ export default function Login({ onLogin, onBack, initialRole = 'citizen' }) {
         )}
         <div className="login-head">
           <div className="brand-mark login-mark" aria-label="Layerd logo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2 2 7l10 5 10-5-10-5Z" />
-              <path d="m2 12 10 5 10-5" />
-              <path d="m2 17 10 5 10-5" />
-            </svg>
+            <CubeMark size={30} tint="#8B93E8" />
           </div>
           <div>
             <h1>Layerd</h1>

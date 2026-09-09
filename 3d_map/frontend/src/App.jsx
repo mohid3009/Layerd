@@ -1,8 +1,9 @@
 import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, NavLink, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
-import { getSavedBuildings, getSessions, deleteSession, updateBuilding, confirmBuildingEdit, deleteBuilding as deleteBuildingApi, getRegion, allUnits, demoBaseUlpin, digipin } from './api.js'
+import { getSavedBuildings, getSessions, deleteSession, updateBuilding, confirmBuildingEdit, deleteBuilding as deleteBuildingApi, getRegion, allUnits, demoBaseUlpin, digipin, citizenOwns } from './api.js'
 import Landing from './components/Landing.jsx'
 import CitizenDashboard from './components/CitizenDashboard.jsx'
+import CubeMark from './components/CubeMark.jsx'
 import Login from './components/Login.jsx'
 import BuildingsMap from './components/BuildingsMap.jsx'
 
@@ -30,6 +31,21 @@ function saveSession(s) {
 
 export default function App() {
   const [session, setSession] = useState(loadSession)
+
+  // Linear-style cursor spotlight: track the pointer over glass cards and
+  // expose its position as CSS vars consumed by the card ::after glow.
+  useEffect(() => {
+    const onMove = (e) => {
+      const el = e.target?.closest?.('.panel-section, .stat-card, .prop-card')
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      el.style.setProperty('--mx', `${e.clientX - r.left}px`)
+      el.style.setProperty('--my', `${e.clientY - r.top}px`)
+    }
+    window.addEventListener('mousemove', onMove)
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+
   const updateSession = (s) => {
     setSession(s)
     saveSession(s)
@@ -83,11 +99,7 @@ function Topbar({ session, onLogout, children }) {
     <header className="topbar">
       <div className="brand">
         <div className="brand-mark" aria-label="Layerd logo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2 2 7l10 5 10-5-10-5Z" />
-            <path d="m2 12 10 5 10-5" />
-            <path d="m2 17 10 5 10-5" />
-          </svg>
+          <CubeMark size={28} tint="#8B93E8" />
         </div>
         <div className="brand-text">
           <h1>Layerd</h1>
@@ -326,6 +338,28 @@ function Dashboard({ session, onLogout }) {
   const navigate = useNavigate()
   // citizens land on their portfolio dashboard; the map is one click away
   const [citizenMapView, setCitizenMapView] = useState(false)
+
+  // buildings the signed-in citizen owns (drives the map's owned highlights)
+  const ownedIds = useMemo(
+    () =>
+      isCitizen
+        ? features
+            .filter((f) => citizenOwns(f.properties.building_id))
+            .map((f) => f.properties.building_id)
+        : null,
+    [features, isCitizen],
+  )
+
+  // citizen map view: show ONLY the selected property; with nothing selected,
+  // fall back to the full owned portfolio (never the whole city)
+  const citizenMapFeatures = useMemo(() => {
+    if (!isCitizen) return null
+    if (selectedId) {
+      const f = features.find((x) => x.properties.building_id === selectedId)
+      if (f) return [f]
+    }
+    return features.filter((f) => citizenOwns(f.properties.building_id))
+  }, [isCitizen, features, selectedId])
 
   // ── registrar search: buildings by name/id, base ULPIN, unit ULPIN,
   // owner name or DIGIPIN ──────────────────────────────────────────────────
@@ -692,7 +726,7 @@ function Dashboard({ session, onLogout }) {
           demo city — Chennai · T. Nagar buildings from OpenStreetMap — pan, zoom &amp; tilt freely
         </span>
         <span style={{ flex: 1 }} />
-        {state === 'ready' && stats && (
+        {state === 'ready' && stats && !isCitizen && (
           <span className="mono tiny">{stats.n} buildings · tallest {stats.tallest} m</span>
         )}
         {isRegistrar && pendingFeatures.length > 0 && (
@@ -710,11 +744,12 @@ function Dashboard({ session, onLogout }) {
         <section className="viewport">
           {state === 'ready' && (
             <BuildingsMap
-              features={visibleFeatures}
+              features={isCitizen ? citizenMapFeatures : visibleFeatures}
               selectedId={selectedId}
               onSelect={setSelectedId}
               canEdit={canEditBuildings}
               onFootprintDrawn={handleFootprintDrawn}
+              ownedIds={ownedIds}
             />
           )}
           {state === 'ready' && !visibleFeatures.length && (
