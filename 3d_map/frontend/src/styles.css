@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&family=Roboto+Mono:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&family=Roboto+Mono:wght@500;600&display=swap');
 @import "tailwindcss";
 
 /* ── Citizen portal design tokens (Tailwind v4 theme) — Linear dark ───────── */
@@ -104,43 +104,317 @@ body::before { content: none; }
   border-radius: var(--radius-sm);
 }
 
-/* ---------- topbar ---------- */
+/* ---------- modern topbar ---------- */
 .topbar {
-  display: flex; align-items: center; gap: 18px;
-  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 24px;
   background: var(--panel);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
   position: relative;
   z-index: 1100;
-}
-.topbar::after {
-  content: '';
-  position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
-  background: rgba(255, 255, 255, 0.10);
-  pointer-events: none;
+  min-height: 60px;
 }
 
-.brand { display: flex; align-items: center; gap: 12px; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
 .brand-mark {
-  width: 38px; height: 38px;
-  display: grid; place-items: center;
-  font-size: 19px;
-  color: #000;
-  background: var(--grad);
-  border-radius: 11px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #1C244B, #0D1126);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
 }
-.topbar h1 {
+.brand:hover .brand-mark {
+  transform: scale(1.04);
+}
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+.brand-text h1 {
   font-family: var(--font-display);
-  font-size: 18px;
-  letter-spacing: 0.06em;
-  background: linear-gradient(90deg, #ffffff, #a1a1a6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 1.15;
+  color: var(--text);
+  background: none;
+  -webkit-text-fill-color: initial;
 }
+.brand-tag {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+/* Nav segmented pill bar */
+.mode-switch {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+}
+.nav-link-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.nav-link-item:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+.nav-link-item.active {
+  color: #FFFFFF;
+  background: #4C5BD4;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(76, 91, 212, 0.35);
+}
+
+/* Session / User Profile block */
+.session-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.session-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 999px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+}
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4C5BD4, #818CF8);
+  color: #FFFFFF;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.session-meta {
+  display: flex;
+  flex-direction: column;
+}
+.session-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.1;
+}
+.session-role {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.role-citizen { color: #34D399; }
+.role-surveyor { color: #818CF8; }
+.role-registrar { color: #FBBF24; }
+
+.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-logout:hover {
+  color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Role Switcher Pill Bar in Topbar */
+.role-switcher-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+.role-label-text {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.role-pill-group {
+  display: flex;
+  align-items: center;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+.role-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.role-pill-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+.role-pill-btn.active {
+  color: #FFFFFF;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.role-pill-btn.active.role-pill-citizen {
+  background: #059669;
+  color: #FFFFFF;
+}
+.role-pill-btn.active.role-pill-registrar {
+  background: #D97706;
+  color: #FFFFFF;
+}
+.role-pill-btn.active.role-pill-surveyor {
+  background: #4F46E5;
+  color: #FFFFFF;
+}
+
+/* Light theme overrides for topbar inside .citizen-dash */
+.citizen-dash .topbar {
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #E4E7EC;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
+}
+.citizen-dash .topbar h1 {
+  color: #0D1126;
+}
+.citizen-dash .brand-mark {
+  background: #EEF2FF;
+  border: 1px solid #C7D2FE;
+  box-shadow: 0 1px 4px rgba(76, 91, 212, 0.12);
+}
+.citizen-dash .brand-tag {
+  color: #5C6675;
+}
+.citizen-dash .mode-switch {
+  background: #F2F4F7;
+  border-color: #E4E7EC;
+}
+.citizen-dash .nav-link-item {
+  color: #5C6675;
+}
+.citizen-dash .nav-link-item:hover {
+  background: #E9EDF3;
+  color: #1C2530;
+}
+.citizen-dash .nav-link-item.active {
+  background: #FFFFFF;
+  color: #4C5BD4;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.10), 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+.citizen-dash .role-label-text {
+  color: #5C6675;
+}
+.citizen-dash .role-pill-group {
+  background: #F2F4F7;
+  border-color: #E4E7EC;
+}
+.citizen-dash .role-pill-btn {
+  color: #5C6675;
+}
+.citizen-dash .role-pill-btn:hover {
+  color: #1C2530;
+  background: #E9EDF3;
+}
+.citizen-dash .role-pill-btn.active.role-pill-citizen {
+  background: #059669;
+  color: #FFFFFF;
+}
+.citizen-dash .role-pill-btn.active.role-pill-registrar {
+  background: #D97706;
+  color: #FFFFFF;
+}
+.citizen-dash .role-pill-btn.active.role-pill-surveyor {
+  background: #4F46E5;
+  color: #FFFFFF;
+}
+.citizen-dash .session-user-badge {
+  background: #FFFFFF;
+  border-color: #E4E7EC;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.citizen-dash .session-name {
+  color: #1C2530;
+}
+.citizen-dash .role-citizen {
+  color: #1B7A4A;
+}
+.citizen-dash .btn-logout {
+  background: #FFFFFF;
+  border-color: #CDD4DF;
+  color: #5C6675;
+}
+.citizen-dash .btn-logout:hover {
+  background: #FEE2E2;
+  border-color: #FCA5A5;
+  color: #B91C1C;
+}
+.citizen-dash .search {
+  background: #FFFFFF;
+  border-color: #CDD4DF;
+  color: #1C2530;
+}
+.citizen-dash .search::placeholder {
+  color: #98A2B3;
+}
+
 
 /* ---------- search ---------- */
 .search {
@@ -1815,46 +2089,80 @@ textarea::placeholder, input::placeholder { color: #6E6E75; }
 }
 .search-results .nav-row:hover { background: var(--panel2-hover); }
 
-/* citizen portfolio dashboard */
+/* citizen portfolio dashboard container */
 .citizen-dash {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 24px;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  overflow-y: auto;
+}
+.citizen-main-content {
+  flex: 1;
+  max-width: 1240px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 24px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
 }
 .citizen-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 .citizen-head h2 {
   font-size: 20px;
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: -0.01em;
   margin-bottom: 4px;
 }
-.stat-cards { display: flex; gap: 12px; flex-wrap: wrap; }
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+@media (max-width: 1024px) {
+  .stat-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .stat-cards {
+    grid-template-columns: 1fr;
+  }
+}
 .stat-card {
-  background: var(--panel2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-  min-width: 150px;
+  background: #FFFFFF;
+  border: 1px solid #E4E7EC;
+  border-radius: 14px;
+  padding: 18px 20px;
+  min-width: 0;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
 }
 .stat-card b {
   display: block;
-  font-size: 22px;
-  font-weight: 650;
+  font-size: 24px;
+  font-weight: 800;
+  color: #1C2530;
   margin-bottom: 4px;
+  letter-spacing: -0.02em;
 }
 .prop-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
   align-content: start;
 }
 .prop-card {
@@ -2851,14 +3159,19 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 .citizen-banner {
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   background:
-    radial-gradient(600px 300px at 80% -20%, rgba(94, 106, 210, 0.25), transparent 70%),
-    linear-gradient(180deg, #0D1126, #0A0A0C);
-  padding: 26px 28px;
-  color: #EDEDEF;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 8px 40px rgba(0, 0, 0, 0.45), 0 0 80px rgba(94, 106, 210, 0.08);
+    radial-gradient(circle at 85% 15%, rgba(129, 140, 248, 0.3), transparent 50%),
+    radial-gradient(circle at 15% 90%, rgba(59, 130, 246, 0.2), transparent 45%),
+    linear-gradient(135deg, #1A2352 0%, #253372 50%, #101633 100%);
+  padding: 32px 36px;
+  color: #FFFFFF;
+  box-shadow: 0 14px 40px -10px rgba(26, 35, 82, 0.35);
+  min-height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .cb-circle {
   position: absolute;
@@ -2866,19 +3179,21 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   border: 1px solid rgba(255, 255, 255, 0.08);
   pointer-events: none;
 }
-.cb-circle.c1 { width: 260px; height: 260px; top: -110px; right: -70px; }
-.cb-circle.c2 { width: 380px; height: 380px; top: -160px; right: -120px; }
-.cb-content { position: relative; max-width: 60%; }
+.cb-circle.c1 { width: 280px; height: 280px; top: -110px; right: -70px; }
+.cb-circle.c2 { width: 420px; height: 420px; top: -160px; right: -120px; }
+.cb-content { position: relative; max-width: 680px; z-index: 2; }
 .cb-eyebrow {
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 11px;
-  color: rgba(237, 237, 239, 0.6);
+  letter-spacing: 0.1em;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
 }
-.cb-title { font-size: 24px; font-weight: 800; margin-top: 6px; letter-spacing: -0.02em; }
-.cb-sub { font-size: 13px; color: rgba(237, 237, 239, 0.65); margin-top: 6px; line-height: 1.55; }
-.cb-cta { margin-top: 16px; }
-.cb-art { position: absolute; right: 24px; bottom: 12px; }
+.cb-title { font-size: 28px; font-weight: 800; margin-top: 8px; letter-spacing: -0.025em; line-height: 1.25; color: #FFFFFF; }
+.cb-sub { font-size: 14px; color: rgba(255, 255, 255, 0.88); margin-top: 8px; line-height: 1.6; }
+.cb-sub b { color: #FFFFFF; font-weight: 700; }
+.cb-cta { margin-top: 18px; }
+.cb-art { position: absolute; right: 28px; bottom: 18px; opacity: 0.85; }
 
 .welcome-grid {
   display: grid;
@@ -2926,8 +3241,17 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   margin: 6px 0 0;
 }
 
-/* = CITIZEN LIGHT SCOPE - the citizen dashboard alone goes light = */
+/* = CITIZEN SCOPE - consistent light theme across citizen dashboard and passport = */
 .citizen-dash {
+  --color-page: #F5F6F8;
+  --color-surface: #FFFFFF;
+  --color-ink: #1C2530;
+  --color-ink-mid: #5C6675;
+  --color-ink-soft: #8A8F98;
+  --color-line: #E4E7EC;
+  --color-linesoft: #F2F4F7;
+  --panel: #FFFFFF;
+  --panel-solid: #FFFFFF;
   --panel2: #F2F4F7;
   --panel2-hover: #E9EDF3;
   --border: #E4E7EC;
@@ -2941,6 +3265,16 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   color: #1C2530;
   scrollbar-color: #C6CDD8 transparent;
 }
+
+/* Ensure common utility classes adhere to the clean light theme inside citizen-dash */
+.citizen-dash .text-ink:not(.text-white) { color: #1C2530; }
+.citizen-dash .text-ink-mid { color: #5C6675; }
+.citizen-dash .text-ink-soft { color: #8A8F98; }
+.citizen-dash .bg-surface { background-color: #FFFFFF; }
+.citizen-dash .bg-page { background-color: #F5F6F8; }
+.citizen-dash .border-line { border-color: #E4E7EC; }
+.citizen-dash .border-linesoft { border-color: #F2F4F7; }
+
 
 /* cards: white surface, light shadow (spotlight tinted for light bg) */
 .citizen-dash .panel-section,
@@ -3029,9 +3363,509 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 .citizen-dash .ring-svg circle:nth-of-type(1) { stroke: #E4E7EC; }
 .citizen-dash .ring-svg circle:nth-of-type(2) { stroke: #4C5BD4; }
 
-/* banner CTA ties into the light accent */
-.citizen-dash .cb-cta {
+/* banner CTA buttons */
+.citizen-dash .cb-cta.primary {
+  background: #FFFFFF !important;
+  color: #1A2352 !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18) !important;
+}
+.citizen-dash .cb-cta.primary:hover {
+  background: #F1F5F9 !important;
+  transform: translateY(-1px);
+}
+.citizen-dash .cb-cta:not(.primary) {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  font-weight: 600 !important;
+  backdrop-filter: blur(8px);
+}
+.citizen-dash .cb-cta:not(.primary):hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+/* ── Citizen Portal: Quick Services, Certificates, Grievances, FAQs ── */
+.citizen-quick-services {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 14px;
+}
+@media (max-width: 1024px) {
+  .citizen-quick-services {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .citizen-quick-services {
+    grid-template-columns: 1fr;
+  }
+}
+.quick-service-card {
   background: #FFFFFF;
+  border: 1px solid #E4E7EC;
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
+}
+.quick-service-card:hover {
+  transform: translateY(-2px);
+  border-color: #4C5BD4;
+  box-shadow: 0 10px 24px -4px rgba(76, 91, 212, 0.16);
+}
+.qs-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+.qs-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1C2530;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.qs-desc {
+  font-size: 12px;
+  color: #5C6675;
+  line-height: 1.45;
+}
+.qs-action {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4C5BD4;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Filter pills */
+.filter-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.filter-pill {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #FFFFFF;
+  border: 1px solid #E4E7EC;
+  color: #5C6675;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.filter-pill:hover {
+  background: #F2F4F7;
   color: #1C2530;
 }
-.citizen-dash .cb-cta:hover { background: #F0EAF9; }
+.filter-pill.active {
+  background: #4C5BD4;
+  color: #FFFFFF;
+  border-color: #4C5BD4;
+}
+
+/* Enhanced property card buttons */
+.prop-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #E4E7EC;
+}
+
+/* FAQ Accordion */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.faq-item {
+  border: 1px solid #E4E7EC;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #FFFFFF;
+}
+.faq-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1C2530;
+  cursor: pointer;
+  text-align: left;
+}
+.faq-btn:hover {
+  background: #F9FAFB;
+}
+.faq-ans {
+  padding: 0 16px 14px;
+  font-size: 12.5px;
+  color: #5C6675;
+  line-height: 1.55;
+}
+
+/* Citizen Modal */
+.citizen-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.citizen-modal {
+  background: #FFFFFF;
+  border-radius: 16px;
+  max-width: 640px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  color: #1C2530;
+}
+.modal-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid #E4E7EC;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #E4E7EC;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #F9FAFB;
+}
+
+/* Certificate printable layout */
+.cert-frame {
+  border: 8px double #4C5BD4;
+  padding: 24px;
+  background: #FFFDF9;
+  border-radius: 4px;
+  position: relative;
+  box-shadow: inset 0 0 20px rgba(76, 91, 212, 0.05);
+}
+.cert-stamp {
+  border: 2px solid #4C5BD4;
+  color: #4C5BD4;
+  padding: 4px 10px;
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  display: inline-block;
+  border-radius: 4px;
+  transform: rotate(-4deg);
+}
+
+/* ── Volumetric Overlap & Unit Correction Workflow ─────────────────────────── */
+
+/* Unit list row — overlap highlight */
+.nav-row-overlap {
+  border-left: 3px solid #f59e0b !important;
+}
+
+/* Overlap dots in unit list */
+.badge-pending-dot {
+  color: #a78bfa;
+  font-size: 10px;
+}
+.badge-overlap-dot {
+  color: #f59e0b;
+  font-size: 10px;
+}
+
+/* Overlap warning banner (also reused for pending-approval) */
+.overlap-warning {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 8px 0;
+  font-size: 12px;
+  color: #fcd34d;
+}
+.pending-approval-banner {
+  background: rgba(167, 139, 250, 0.08);
+  border-color: rgba(167, 139, 250, 0.3);
+  color: #a78bfa;
+}
+
+/* Overlap card — detailed overlap list */
+.overlap-card {
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 8px 0 4px;
+}
+.overlap-card-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fbbf24;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.overlap-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(245, 158, 11, 0.15);
+  flex-wrap: wrap;
+}
+.overlap-row-unit {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.overlap-metrics {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.badge-overlap-vol {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Approval card — registrar review */
+.approval-card {
+  background: rgba(52, 211, 153, 0.06);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 10px;
+  padding: 14px;
+  margin: 10px 0 4px;
+}
+.approval-card-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #34d399;
+  margin-bottom: 10px;
+}
+
+/* Before/After diff table */
+.diff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+.diff-table th {
+  text-align: left;
+  color: var(--muted, #8b93a7);
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.diff-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--fg, #e2e4ea);
+}
+.diff-table tr.diff-changed td:first-child {
+  font-weight: 600;
+  color: #e2e4ea;
+}
+td.diff-before {
+  color: #f87171;
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+td.diff-after {
+  color: #4ade80;
+  font-weight: 600;
+}
+.diff-table tr.diff-overlap-row td {
+  background: rgba(129, 140, 248, 0.07);
+  border-radius: 4px;
+}
+.diff-table tr.diff-overlap-row td:first-child {
+  font-weight: 700;
+  color: #818cf8;
+}
+
+/* Reject dialog */
+.reject-dialog {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 10px;
+  padding: 14px;
+  margin: 8px 0;
+}
+.reject-textarea {
+  width: 100%;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #e2e4ea;
+  padding: 8px 10px;
+  font-size: 12px;
+  resize: vertical;
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+
+/* Correction form */
+.correction-form {
+  background: rgba(129, 140, 248, 0.06);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+  border-radius: 10px;
+  padding: 14px;
+  margin: 8px 0;
+}
+.correction-form-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #818cf8;
+  margin-bottom: 12px;
+}
+.correction-form .edit-form label span {
+  color: var(--muted, #8b93a7);
+}
+.correction-form .edit-form textarea {
+  width: 100%;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+  border-radius: 6px;
+  color: #e2e4ea;
+  padding: 8px 10px;
+  font-size: 12px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* Propose correction button */
+.btn-propose {
+  background: rgba(129, 140, 248, 0.15) !important;
+  color: #818cf8 !important;
+  border-color: rgba(129, 140, 248, 0.4) !important;
+}
+.btn-propose:hover {
+  background: rgba(129, 140, 248, 0.25) !important;
+}
+
+/* Small link-style button */
+.btn-small-link {
+  background: transparent !important;
+  color: #818cf8 !important;
+  border-color: rgba(129, 140, 248, 0.3) !important;
+  font-size: 10px !important;
+  padding: 2px 7px !important;
+}
+.btn-small-link:hover {
+  background: rgba(129, 140, 248, 0.1) !important;
+}
+
+/* History rows in unit inspector */
+.history-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.history-row:last-child {
+  border-bottom: none;
+}
+.history-change {
+  font-size: 11px;
+  color: #b0b8c8;
+  margin: 2px 0 0;
+  line-height: 1.4;
+}
+
+/* Role badge in history */
+.badge-role {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  width: fit-content;
+}
+.badge-role-registrar {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+.badge-role-surveyor {
+  background: rgba(129, 140, 248, 0.15);
+  color: #818cf8;
+}
+.badge-role-citizen {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+/* Registrar dashboard: pending unit edit badge */
+.pending-unit-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #818cf8;
+  color: #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 6px;
+  line-height: 1;
+}
+
+
+

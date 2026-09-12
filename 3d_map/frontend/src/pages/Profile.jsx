@@ -3,9 +3,10 @@ import { Globe, Bell, Shield, HelpCircle, ChevronRight, LogOut } from 'lucide-re
 import Breadcrumb from '../components/ui/Breadcrumb.jsx'
 import { currentUser } from '../mockData.js'
 
-export default function Profile() {
+export default function Profile({ onLogout: propLogout }) {
   const navigate = useNavigate()
-  const { onLogout } = useOutletContext()
+  const outlet = useOutletContext()
+  const onLogout = propLogout || outlet?.onLogout || (() => {})
   const initials = currentUser.name.split(' ').map((w) => w[0]).join('')
 
   const settings = [

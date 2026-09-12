@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
-import { getSavedBuildings, fetchUnits, generateUnits, deleteUnits, updateUnit, digipin, allUnits, demoBaseUlpin } from '../api.js'
+import { getSavedBuildings, fetchUnits, generateUnits, deleteUnits, updateUnit, digipin, allUnits, demoBaseUlpin, detectVolumetricOverlaps, overlapsForUnit, unitZRange, proposeUnitCorrection, confirmUnitCorrection, rejectUnitCorrection, getPendingUnitEdits } from '../api.js'
 import BuildingsMap from './BuildingsMap.jsx'
 
 const FH = 3 // storey height used by the generator (m)
@@ -62,7 +62,9 @@ function UnitMesh({ unit, w, d, fh, color, selected, onPick }) {
 
 export default function UlpinView({ session, initialBuilding = null }) {
   const bootstrappedRef = useRef(false)
-  const canManage = session.role !== 'citizen'
+  const canManage = session?.role !== 'citizen'
+  const isSurveyor = session?.role === 'surveyor'
+  const isRegistrar = session?.role === 'registrar'
   const [buildings, setBuildings] = useState([])
   const [selId, setSelId] = useState(null)
   const [units, setUnits] = useState([])
@@ -75,15 +77,38 @@ export default function UlpinView({ session, initialBuilding = null }) {
   const [msg, setMsg] = useState(null)
   const [err, setErr] = useState(null)
   const [query, setQuery] = useState('') // building picker search
-  const [editingUnit, setEditingUnit] = useState(false)
+  const [editingUnit, setEditingUnit] = useState(false) // registrar direct edit
   const [unitDraft, setUnitDraft] = useState(null)
-  const canEditUnits = session.role === 'registrar'
+  const canEditUnits = isRegistrar // registrar direct edit
+  const canProposeCorrection = isSurveyor // surveyor proposes, awaits approval
+
+  // Surveyor correction flow
+  const [correctingUnit, setCorrectingUnit] = useState(false)
+  const [correctionDraft, setCorrectionDraft] = useState(null)
+  const [correctionErr, setCorrectionErr] = useState(null)
+
+  // Registrar reject dialog
+  const [rejectEditId, setRejectEditId] = useState(null)
+  const [rejectReason, setRejectReason] = useState('')
+
+  // Pending unit edits (reactive)
+  const [pendingUnitEdits, setPendingUnitEdits] = useState(() => getPendingUnitEdits())
+  useEffect(() => {
+    const refresh = () => setPendingUnitEdits(getPendingUnitEdits())
+    window.addEventListener('demo-pending-unit-edits-changed', refresh)
+    window.addEventListener('demo-units-changed', refresh)
+    return () => {
+      window.removeEventListener('demo-pending-unit-edits-changed', refresh)
+      window.removeEventListener('demo-units-changed', refresh)
+    }
+  }, [])
 
   useEffect(() => {
     getSavedBuildings()
       .then((fc) => setBuildings(fc.features || []))
       .catch(() => {})
   }, [])
+
 
   // search index over every generated unit: its ULPIN, owner and DIGIPIN
   const unitIndex = useMemo(() => {
@@ -197,7 +222,12 @@ export default function UlpinView({ session, initialBuilding = null }) {
   }
 
   // leave edit mode whenever the selected unit or building changes
-  useEffect(() => setEditingUnit(false), [selUlpin, selId])
+  useEffect(() => {
+    setEditingUnit(false)
+    setCorrectingUnit(false)
+    setCorrectionDraft(null)
+    setCorrectionErr(null)
+  }, [selUlpin, selId])
 
   const startUnitEdit = () => {
     if (!selUnit) return
@@ -225,6 +255,70 @@ export default function UlpinView({ session, initialBuilding = null }) {
         setErr(e.message)
         setBusy(false)
       })
+  }
+
+  // Surveyor: open correction form
+  const startCorrection = () => {
+    if (!selUnit) return
+    setCorrectionDraft({
+      owner_name: selUnit.owner_name,
+      rights_type: selUnit.rights_type,
+      area_sqm: selUnit.area_sqm,
+      resolution_note: '',
+    })
+    setCorrectingUnit(true)
+    setCorrectionErr(null)
+  }
+
+  const submitCorrection = async () => {
+    if (!selId || !selUnit || !correctionDraft) return
+    setBusy(true)
+    setCorrectionErr(null)
+    try {
+      const result = await proposeUnitCorrection(selId, selUnit.unit_ulpin, correctionDraft, session)
+      const refreshed = await fetchUnits(selId)
+      setUnits(refreshed.units || [])
+      setCorrectingUnit(false)
+      setCorrectionDraft(null)
+      setMsg(`Correction submitted for ${selUnit.unit_ulpin}. Overlap: ${result.overlapBefore.toFixed(1)} → ${result.overlapAfter.toFixed(1)} m³. Awaiting registrar approval.`)
+    } catch (e) {
+      setCorrectionErr(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Registrar: approve a pending unit edit
+  const handleApprove = async (editId) => {
+    setBusy(true)
+    try {
+      await confirmUnitCorrection(editId, session)
+      const refreshed = await fetchUnits(selId)
+      setUnits(refreshed.units || [])
+      setMsg('Correction approved and applied.')
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Registrar: reject
+  const handleReject = async () => {
+    if (!rejectEditId) return
+    setBusy(true)
+    try {
+      await rejectUnitCorrection(rejectEditId, session, rejectReason)
+      const refreshed = await fetchUnits(selId)
+      setUnits(refreshed.units || [])
+      setRejectEditId(null)
+      setRejectReason('')
+      setMsg('Correction rejected.')
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setBusy(false)
+    }
   }
 
   // footprint dimensions in metres (for the 3D mapping)
@@ -518,103 +612,288 @@ export default function UlpinView({ session, initialBuilding = null }) {
                   <div className="ulpin-floor-head">
                     {floor < 0 ? `basement ${-floor}` : `floor ${floor}`}
                   </div>
-                  {us.map((u) => (
-                    <div
-                      key={u.unit_ulpin}
-                      className={`nav-row ${selUlpin === u.unit_ulpin ? 'active' : ''}`}
-                      onClick={() => setSelUlpin(u.unit_ulpin)}
-                    >
-                      <span className="session-label mono tiny" title={u.unit_ulpin}>
-                        {u.unit_ulpin}
-                      </span>
-                      <span className="muted tiny">{u.owner_name} · {u.area_sqm} m²</span>
-                    </div>
-                  ))}
+                  {us.map((u) => {
+                    const hasPending = pendingUnitEdits.some((e) => e.unit_ulpin === u.unit_ulpin)
+                    const overlaps = detectVolumetricOverlaps(units)
+                    const hasOverlap = overlaps.some((o) => o.unitA_ulpin === u.unit_ulpin || o.unitB_ulpin === u.unit_ulpin)
+                    return (
+                      <div
+                        key={u.unit_ulpin}
+                        className={`nav-row ${selUlpin === u.unit_ulpin ? 'active' : ''} ${hasOverlap ? 'nav-row-overlap' : ''}`}
+                        onClick={() => setSelUlpin(u.unit_ulpin)}
+                      >
+                        <span className="session-label mono tiny" title={u.unit_ulpin}>
+                          {u.unit_ulpin}
+                          {hasPending && <span className="badge-pending-dot" title="Pending approval"> ●</span>}
+                          {hasOverlap && !hasPending && <span className="badge-overlap-dot" title="Overlap detected"> ⚠</span>}
+                        </span>
+                        <span className="muted tiny">{u.owner_name} · {u.area_sqm} m²</span>
+                      </div>
+                    )
+                  })}
                 </div>
               ))}
             </div>
           )}
 
-          {selUnit && (
-            <div className="panel-section acc-slate">
-              <div className="section-head">
-                <h3>unit details</h3>
-                {canEditUnits && !editingUnit && (
-                  <button className="btn tiny" onClick={startUnitEdit}>edit unit</button>
-                )}
-              </div>
-              {editingUnit ? (
-                <div className="edit-form">
-                  <label>
-                    <span>owner name</span>
-                    <input
-                      value={unitDraft.owner_name}
-                      onChange={(e) => setUnitDraft({ ...unitDraft, owner_name: e.target.value })}
-                    />
-                  </label>
-                  <label>
-                    <span>rights type</span>
-                    <select
-                      value={unitDraft.rights_type}
-                      onChange={(e) => setUnitDraft({ ...unitDraft, rights_type: e.target.value })}
-                    >
-                      <option value="freehold">freehold</option>
-                      <option value="leasehold">leasehold</option>
-                      <option value="common">common</option>
-                      <option value="air-rights">air-rights</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>area (m²)</span>
-                    <input
-                      type="number"
-                      min="1"
-                      value={unitDraft.area_sqm}
-                      onChange={(e) => setUnitDraft({ ...unitDraft, area_sqm: e.target.value })}
-                    />
-                  </label>
-                  <label>
-                    <span>status</span>
-                    <select
-                      value={unitDraft.validation_status}
-                      onChange={(e) => setUnitDraft({ ...unitDraft, validation_status: e.target.value })}
-                    >
-                      <option value="confirmed">confirmed</option>
-                      <option value="conflict">conflict</option>
-                      <option value="pending review">pending review</option>
-                    </select>
-                  </label>
-                  <div className="btn-row">
-                    <button className="btn primary" disabled={busy} onClick={saveUnitEdits}>
-                      save changes
-                    </button>
-                    <button className="btn" onClick={() => setEditingUnit(false)}>cancel</button>
+          {selUnit && (() => {
+            const myOverlaps = overlapsForUnit(units, selUnit.unit_ulpin, geo?.areaSqm)
+            const myPendingEdit = pendingUnitEdits.find((e) => e.unit_ulpin === selUnit.unit_ulpin)
+            const zRange = unitZRange(selUnit)
+            return (
+              <div className="panel-section acc-slate">
+                <div className="section-head">
+                  <h3>unit details</h3>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {canEditUnits && !editingUnit && !correctingUnit && (
+                      <button className="btn tiny" onClick={startUnitEdit}>edit unit</button>
+                    )}
+                    {canProposeCorrection && !correctingUnit && !editingUnit && selUnit.validation_status !== 'pending_approval' && (
+                      <button className="btn tiny btn-propose" onClick={startCorrection}>propose correction</button>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <table className="kv">
-                  <tbody>
-                    <tr><td>ULPIN</td><td className="mono">{selUnit.unit_ulpin}</td></tr>
-                    <tr><td>DIGIPIN</td><td className="mono">{unitGeo(selUnit)?.digipin || '—'}</td></tr>
-                    <tr><td>building</td><td>{selected?.properties.name || selId}</td></tr>
-                    <tr><td>floor</td><td>{selUnit.floor_index < 0 ? `basement ${-selUnit.floor_index}` : `floor ${selUnit.floor_index}`}</td></tr>
-                    <tr><td>z-range</td><td>{selUnit.floor_index * FH} m → {(selUnit.floor_index + 1) * FH} m</td></tr>
-                    <tr><td>centroid</td><td className="mono tiny">{unitGeo(selUnit) ? `${unitGeo(selUnit).lat.toFixed(6)}, ${unitGeo(selUnit).lon.toFixed(6)}` : '—'}</td></tr>
-                    <tr><td>unit no.</td><td>U{selUnit.unit_no}</td></tr>
-                    <tr><td>area</td><td>{selUnit.area_sqm} m²</td></tr>
-                    <tr><td>rights</td><td>{selUnit.rights_type}</td></tr>
-                    <tr><td>owner</td><td>{selUnit.owner_name}</td></tr>
-                    <tr><td>owner id</td><td className="mono">{selUnit.owner_id}</td></tr>
-                    <tr><td>status</td><td className={selUnit.validation_status === 'conflict' ? 'status-pending' : 'status-confirmed'}>{selUnit.validation_status}</td></tr>
-                    <tr><td>segmentation</td><td>{selUnit.segmentation}</td></tr>
-                    {selUnit.updated_at && (
-                      <tr><td>last edit</td><td className="tiny">by {selUnit.last_edited_by} · {new Date(selUnit.updated_at).toLocaleString()}</td></tr>
+
+                {/* Pending approval badge */}
+                {selUnit.validation_status === 'pending_approval' && (
+                  <div className="overlap-warning pending-approval-banner">
+                    <span>⏳</span>
+                    <div>
+                      <strong>Pending Registrar Approval</strong>
+                      <p style={{ margin: 0, fontSize: 11 }}>Correction proposed by {selUnit.last_edited_by}. Awaiting review.</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Volumetric overlap alerts */}
+                {myOverlaps.length > 0 && (
+                  <div className="overlap-card">
+                    <div className="overlap-card-header">
+                      <span>⚠ Volumetric Overlaps Detected ({myOverlaps.length})</span>
+                    </div>
+                    {myOverlaps.map((o, i) => {
+                      const partner = o.unitA_ulpin === selUnit.unit_ulpin ? o.unitB_ulpin : o.unitA_ulpin
+                      const partnerOwner = o.unitA_ulpin === selUnit.unit_ulpin ? o.ownerB : o.ownerA
+                      return (
+                        <div key={i} className="overlap-row">
+                          <div className="overlap-row-unit">
+                            <span className="mono tiny">{partner}</span>
+                            <span className="muted tiny">{partnerOwner}</span>
+                          </div>
+                          <div className="overlap-metrics">
+                            <span className="badge-overlap-vol">{o.volumeM3} m³</span>
+                            <span className="muted tiny">{o.zOverlapM} m vert. · {o.xyOverlapM2} m² XY</span>
+                          </div>
+                          <button className="btn tiny btn-small-link" onClick={() => setSelUlpin(partner)}>view</button>
+                        </div>
+                      )
+                    })}
+                    {canProposeCorrection && selUnit.validation_status !== 'pending_approval' && !correctingUnit && (
+                      <button className="btn tiny btn-propose" style={{ marginTop: 8 }} onClick={startCorrection}>
+                        Propose Resolution
+                      </button>
                     )}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
+                  </div>
+                )}
+
+                {/* Registrar: Pending unit edit approval card */}
+                {isRegistrar && myPendingEdit && (
+                  <div className="approval-card">
+                    <div className="approval-card-header">📋 Pending Correction — Awaiting Your Approval</div>
+                    <table className="diff-table">
+                      <thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead>
+                      <tbody>
+                        {Object.keys(myPendingEdit.after).map((k) => {
+                          const bv = myPendingEdit.before[k]
+                          const av = myPendingEdit.after[k]
+                          const changed = String(bv) !== String(av)
+                          return (
+                            <tr key={k} className={changed ? 'diff-changed' : ''}>
+                              <td>{k.replace(/_/g, ' ')}</td>
+                              <td className={changed ? 'diff-before' : ''}>{bv ?? '—'}</td>
+                              <td className={changed ? 'diff-after' : ''}>{av ?? '—'}</td>
+                            </tr>
+                          )
+                        })}
+                        <tr className="diff-overlap-row">
+                          <td>overlap volume</td>
+                          <td className="diff-before">{myPendingEdit.overlap_before_m3} m³</td>
+                          <td className="diff-after">{myPendingEdit.overlap_after_m3} m³</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    {myPendingEdit.resolution_note && (
+                      <p className="muted tiny" style={{ marginTop: 6 }}>Note: {myPendingEdit.resolution_note}</p>
+                    )}
+                    <p className="muted tiny">Proposed by {myPendingEdit.proposed_by} · {new Date(myPendingEdit.created_at).toLocaleString()}</p>
+                    <div className="btn-row">
+                      <button className="btn primary" disabled={busy} onClick={() => handleApprove(myPendingEdit.id)}>✓ Approve</button>
+                      <button className="btn danger" onClick={() => { setRejectEditId(myPendingEdit.id); setRejectReason('') }}>✗ Reject</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reject dialog */}
+                {isRegistrar && rejectEditId && (
+                  <div className="reject-dialog">
+                    <p style={{ margin: '0 0 6px', fontWeight: 600 }}>Rejection Reason</p>
+                    <textarea
+                      className="reject-textarea"
+                      rows={3}
+                      placeholder="Explain why this correction is rejected…"
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                    />
+                    <div className="btn-row">
+                      <button className="btn danger" disabled={busy} onClick={handleReject}>Confirm Rejection</button>
+                      <button className="btn" onClick={() => { setRejectEditId(null); setRejectReason('') }}>Cancel</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Surveyor: Correction form */}
+                {correctingUnit && correctionDraft && (
+                  <div className="correction-form">
+                    <div className="correction-form-header">📝 Propose Correction</div>
+                    <div className="edit-form">
+                      <label>
+                        <span>owner name</span>
+                        <input
+                          value={correctionDraft.owner_name}
+                          onChange={(e) => setCorrectionDraft({ ...correctionDraft, owner_name: e.target.value })}
+                        />
+                      </label>
+                      <label>
+                        <span>rights type</span>
+                        <select
+                          value={correctionDraft.rights_type}
+                          onChange={(e) => setCorrectionDraft({ ...correctionDraft, rights_type: e.target.value })}
+                        >
+                          <option value="freehold">freehold</option>
+                          <option value="leasehold">leasehold</option>
+                          <option value="common">common</option>
+                          <option value="air-rights">air-rights</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>area (m²)</span>
+                        <input
+                          type="number" min="1"
+                          value={correctionDraft.area_sqm}
+                          onChange={(e) => setCorrectionDraft({ ...correctionDraft, area_sqm: e.target.value })}
+                        />
+                      </label>
+                      <label>
+                        <span>resolution note</span>
+                        <textarea
+                          rows={2}
+                          placeholder="Describe the correction and why…"
+                          value={correctionDraft.resolution_note}
+                          onChange={(e) => setCorrectionDraft({ ...correctionDraft, resolution_note: e.target.value })}
+                        />
+                      </label>
+                      {correctionErr && <div className="error mono tiny">{correctionErr}</div>}
+                      <div className="btn-row">
+                        <button className="btn primary" disabled={busy} onClick={submitCorrection}>
+                          {busy ? 'submitting…' : 'Submit for Approval'}
+                        </button>
+                        <button className="btn" onClick={() => { setCorrectingUnit(false); setCorrectionDraft(null) }}>cancel</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Read-only unit details */}
+                {!editingUnit && !correctingUnit && (
+                  <table className="kv">
+                    <tbody>
+                      <tr><td>ULPIN</td><td className="mono">{selUnit.unit_ulpin}</td></tr>
+                      <tr><td>DIGIPIN</td><td className="mono">{unitGeo(selUnit)?.digipin || '—'}</td></tr>
+                      <tr><td>building</td><td>{selected?.properties.name || selId}</td></tr>
+                      <tr><td>floor</td><td>{selUnit.floor_index < 0 ? `basement ${-selUnit.floor_index}` : `floor ${selUnit.floor_index}`}</td></tr>
+                      <tr><td>z-range</td><td>{zRange.zMin.toFixed(1)} m → {zRange.zMax.toFixed(1)} m</td></tr>
+                      <tr><td>centroid</td><td className="mono tiny">{unitGeo(selUnit) ? `${unitGeo(selUnit).lat.toFixed(6)}, ${unitGeo(selUnit).lon.toFixed(6)}` : '—'}</td></tr>
+                      <tr><td>unit no.</td><td>U{selUnit.unit_no}</td></tr>
+                      <tr><td>area</td><td>{selUnit.area_sqm} m²</td></tr>
+                      <tr><td>rights</td><td>{selUnit.rights_type}</td></tr>
+                      <tr><td>owner</td><td><strong>{selUnit.owner_name}</strong></td></tr>
+                      <tr><td>owner id</td><td className="mono">{selUnit.owner_id}</td></tr>
+                      <tr><td>overlaps</td><td className={myOverlaps.length ? 'status-pending' : 'status-confirmed'}>{myOverlaps.length ? `${myOverlaps.length} conflict(s)` : 'none'}</td></tr>
+                      <tr><td>status</td><td className={selUnit.validation_status === 'pending_approval' ? 'status-pending' : selUnit.validation_status === 'conflict' ? 'status-pending' : 'status-confirmed'}>{selUnit.validation_status}</td></tr>
+                      <tr><td>segmentation</td><td>{selUnit.segmentation}</td></tr>
+                      {selUnit.updated_at && (
+                        <tr><td>last edit</td><td className="tiny">by {selUnit.last_edited_by} · {new Date(selUnit.updated_at).toLocaleString()}</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* Registrar direct edit form */}
+                {editingUnit && (
+                  <div className="edit-form">
+                    <label>
+                      <span>owner name</span>
+                      <input
+                        value={unitDraft.owner_name}
+                        onChange={(e) => setUnitDraft({ ...unitDraft, owner_name: e.target.value })}
+                      />
+                    </label>
+                    <label>
+                      <span>rights type</span>
+                      <select
+                        value={unitDraft.rights_type}
+                        onChange={(e) => setUnitDraft({ ...unitDraft, rights_type: e.target.value })}
+                      >
+                        <option value="freehold">freehold</option>
+                        <option value="leasehold">leasehold</option>
+                        <option value="common">common</option>
+                        <option value="air-rights">air-rights</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>area (m²)</span>
+                      <input
+                        type="number" min="1"
+                        value={unitDraft.area_sqm}
+                        onChange={(e) => setUnitDraft({ ...unitDraft, area_sqm: e.target.value })}
+                      />
+                    </label>
+                    <label>
+                      <span>status</span>
+                      <select
+                        value={unitDraft.validation_status}
+                        onChange={(e) => setUnitDraft({ ...unitDraft, validation_status: e.target.value })}
+                      >
+                        <option value="confirmed">confirmed</option>
+                        <option value="conflict">conflict</option>
+                        <option value="pending review">pending review</option>
+                      </select>
+                    </label>
+                    <div className="btn-row">
+                      <button className="btn primary" disabled={busy} onClick={saveUnitEdits}>
+                        save changes
+                      </button>
+                      <button className="btn" onClick={() => setEditingUnit(false)}>cancel</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Edit history */}
+                {!editingUnit && !correctingUnit && selUnit.edit_history?.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Change History</div>
+                    {selUnit.edit_history.slice().reverse().map((h, i) => (
+                      <div key={i} className="history-row">
+                        <span className={`badge-role badge-role-${h.role}`}>{h.role}</span>
+                        <span className="muted tiny">{new Date(h.at).toLocaleString()} · {h.by}</span>
+                        <p className="history-change">{h.change}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           {selSlab && (
             <div className="panel-section acc-clay">

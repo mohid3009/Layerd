@@ -1,11 +1,17 @@
 import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, NavLink, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
-import { getSavedBuildings, getSessions, deleteSession, updateBuilding, confirmBuildingEdit, deleteBuilding as deleteBuildingApi, getRegion, allUnits, demoBaseUlpin, digipin, citizenOwns } from './api.js'
+import { getSavedBuildings, getSessions, deleteSession, updateBuilding, confirmBuildingEdit, deleteBuilding as deleteBuildingApi, getRegion, allUnits, demoBaseUlpin, digipin, citizenOwns, getPendingUnitEdits, confirmUnitCorrection, rejectUnitCorrection } from './api.js'
 import Landing from './components/Landing.jsx'
 import CitizenDashboard from './components/CitizenDashboard.jsx'
 import CubeMark from './components/CubeMark.jsx'
 import Login from './components/Login.jsx'
 import BuildingsMap from './components/BuildingsMap.jsx'
+import PropertyPassport from './pages/PropertyPassport.jsx'
+import ComplaintForm from './pages/ComplaintForm.jsx'
+import PropertyRecords from './pages/PropertyRecords.jsx'
+import UnifiedPropertyCard from './pages/UnifiedPropertyCard.jsx'
+import Profile from './pages/Profile.jsx'
+import { Building2, ShieldCheck, FileText, Layers, LogOut } from 'lucide-react'
 
 // heavy libs (maplibre ~800 KB, three + drei ~1 MB) load only on the pages /
 // views that actually need them
@@ -18,7 +24,7 @@ const SESSION_KEY = 'layerd-session'
 
 function loadSession() {
   try {
-    return JSON.parse(sessionStorage.getItem(SESSION_KEY))
+    return JSON.parse(sessionStorage.getItem(SESSION_KEY)) || null
   } catch {
     return null
   }
@@ -51,40 +57,92 @@ export default function App() {
     saveSession(s)
   }
 
+  const switchRole = (newRole) => {
+    const demoUsers = {
+      citizen: { username: 'citizen1', name: 'Citizen 1', role: 'citizen' },
+      surveyor: { username: 'surveyor1', name: 'Surveyor 1', role: 'surveyor' },
+      registrar: { username: 'registrar1', name: 'Registrar 1', role: 'registrar' },
+    }
+    const user = demoUsers[newRole] || demoUsers.citizen
+    updateSession(user)
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Home session={session} setSession={updateSession} />} />
+      <Route path="/landing" element={<Home session={session} setSession={updateSession} />} />
       <Route path="/login" element={<LoginRoute session={session} setSession={updateSession} />} />
       <Route
         path="/dashboard"
-        element={
-          session ? <Dashboard session={session} onLogout={() => updateSession(null)} /> : <Navigate to="/login" replace />
-        }
+        element={<Dashboard session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />}
+      />
+      <Route
+        path="/passport/:id"
+        element={<PropertyPassportPage session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />}
+      />
+      <Route
+        path="/portal/passport/:id"
+        element={<PropertyPassportPage session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />}
+      />
+      <Route
+        path="/portal/records"
+        element={<PropertyRecordsPage session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />}
+      />
+      <Route
+        path="/portal/upc/:id"
+        element={<UnifiedPropertyCardPage session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />}
+      />
+      <Route
+        path="/portal/report/:unitId"
+        element={<ComplaintFormPage session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />}
+      />
+      <Route
+        path="/portal/profile"
+        element={<ProfilePage session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />}
       />
       <Route
         path="/ulpin"
-        element={
-          session ? <UlpinPage session={session} onLogout={() => updateSession(null)} /> : <Navigate to="/login" replace />
-        }
+        element={<UlpinPage session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />}
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )
 }
 
 function Home({ session, setSession }) {
-  if (session) return <Navigate to="/dashboard" replace />
-  // the landing page pops in, then opens the login portal in place
-  return <Landing onLogin={setSession} />
+  const navigate = useNavigate()
+  return (
+    <Landing
+      onLogin={(s) => {
+        setSession(s)
+        navigate('/dashboard')
+      }}
+    />
+  )
 }
 
 function LoginRoute({ session, setSession }) {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  if (session) return <Navigate to="/dashboard" replace />
+  const reqRole = params.get('role')
+
+  useEffect(() => {
+    if (reqRole) {
+      const demoUsers = {
+        citizen: { username: 'citizen1', name: 'Citizen 1', role: 'citizen' },
+        surveyor: { username: 'surveyor1', name: 'Surveyor 1', role: 'surveyor' },
+        registrar: { username: 'registrar1', name: 'Registrar 1', role: 'registrar' },
+      }
+      if (demoUsers[reqRole]) {
+        setSession(demoUsers[reqRole])
+        navigate('/dashboard')
+      }
+    }
+  }, [reqRole, setSession, navigate])
+
   return (
     <Login
-      initialRole={params.get('role') || 'citizen'}
+      initialRole={reqRole || session?.role || 'citizen'}
       onLogin={(s) => {
         setSession(s)
         navigate('/dashboard')
@@ -94,43 +152,214 @@ function LoginRoute({ session, setSession }) {
   )
 }
 
-function Topbar({ session, onLogout, children }) {
+function PropertyPassportPage({ session, onLogout, onSwitchRole }) {
+  return (
+    <div className="app min-h-screen citizen-dash" style={{ background: '#F5F6F8', color: '#1C2530', overflowY: 'auto' }}>
+      <Topbar session={session} onLogout={onLogout} onSwitchRole={onSwitchRole} />
+      <main className="flex-1 p-5 max-w-[1100px] w-full mx-auto">
+        <PropertyPassport />
+      </main>
+    </div>
+  )
+}
+
+function ComplaintFormPage({ session, onLogout, onSwitchRole }) {
+  return (
+    <div className="app min-h-screen citizen-dash" style={{ background: '#F5F6F8', color: '#1C2530', overflowY: 'auto' }}>
+      <Topbar session={session} onLogout={onLogout} onSwitchRole={onSwitchRole} />
+      <main className="flex-1 p-5 max-w-[800px] w-full mx-auto">
+        <ComplaintForm />
+      </main>
+    </div>
+  )
+}
+
+function PropertyRecordsPage({ session, onLogout, onSwitchRole }) {
+  return (
+    <div className="app min-h-screen citizen-dash" style={{ background: '#F5F6F8', color: '#1C2530', overflowY: 'auto' }}>
+      <Topbar session={session} onLogout={onLogout} onSwitchRole={onSwitchRole} />
+      <main className="flex-1 p-5 max-w-[1100px] w-full mx-auto">
+        <PropertyRecords />
+      </main>
+    </div>
+  )
+}
+
+function UnifiedPropertyCardPage({ session, onLogout, onSwitchRole }) {
+  return (
+    <div className="app min-h-screen citizen-dash" style={{ background: '#F5F6F8', color: '#1C2530', overflowY: 'auto' }}>
+      <Topbar session={session} onLogout={onLogout} onSwitchRole={onSwitchRole} />
+      <main className="flex-1 p-5 max-w-[800px] w-full mx-auto">
+        <UnifiedPropertyCard />
+      </main>
+    </div>
+  )
+}
+
+function ProfilePage({ session, onLogout, onSwitchRole }) {
+  return (
+    <div className="app min-h-screen citizen-dash" style={{ background: '#F5F6F8', color: '#1C2530', overflowY: 'auto' }}>
+      <Topbar session={session} onLogout={onLogout} onSwitchRole={onSwitchRole} />
+      <main className="flex-1 p-5 max-w-[800px] w-full mx-auto">
+        <Profile onLogout={onLogout} />
+      </main>
+    </div>
+  )
+}
+
+function Topbar({ session, onLogout, onSwitchRole, children }) {
+  const isCitizen = session?.role === 'citizen'
+  const isRegistrar = session?.role === 'registrar'
+  const isSurveyor = session?.role === 'surveyor'
+  const [q, setQ] = useState('')
+  const navigate = useNavigate()
+
+  const handleSearch = (e) => {
+    e.preventDefault()
+    if (q.trim()) {
+      navigate(`/passport/${encodeURIComponent(q.trim())}`)
+    }
+  }
+
+  const roleName = ROLE_LABELS[session?.role || 'citizen'] || 'Citizen'
+  const displayName = session?.name || (isRegistrar ? 'Registrar 1' : isSurveyor ? 'Surveyor 1' : 'Citizen 1')
+  const initials = displayName
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+
   return (
     <header className="topbar">
-      <div className="brand">
+      <div className="brand" onClick={() => navigate('/dashboard')} title="Layerd Cadastre Home">
         <div className="brand-mark" aria-label="Layerd logo">
-          <CubeMark size={28} tint="#8B93E8" />
+          <CubeMark size={22} tint={isCitizen ? '#4C5BD4' : isRegistrar ? '#C9A45C' : '#8B93E8'} />
         </div>
         <div className="brand-text">
           <h1>Layerd</h1>
-          <span className="muted tiny">Government of India · National Urban Cadastre · Demo</span>
+          <span className="brand-tag">National 3D Cadastre</span>
         </div>
       </div>
+
       <nav className="mode-switch">
-        <NavLink
-          to="/dashboard"
-          end
-          className={({ isActive }) => `btn nav-dash ${isActive ? 'primary' : ''}`}
-          title="every building saved from your LiDAR scans"
-        >
-          dashboard
-        </NavLink>
-        <NavLink
-          to="/ulpin"
-          className={({ isActive }) => `btn nav-ulpin ${isActive ? 'primary' : ''}`}
-          title="3D unit tree — floors, ULPINs, owners per building"
-        >
-          ULPIN units
-        </NavLink>
+        {isCitizen ? (
+          <>
+            <NavLink
+              to="/dashboard"
+              end
+              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
+              title="Overview & My Properties"
+            >
+              <Building2 size={14} /> My Properties
+            </NavLink>
+            <NavLink
+              to="/passport/unit-2"
+              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
+              title="Digital Property Passport"
+            >
+              <ShieldCheck size={14} /> Digital Passport
+            </NavLink>
+            <NavLink
+              to="/portal/records"
+              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
+              title="Browse City Cadastre Records"
+            >
+              <FileText size={14} /> Records
+            </NavLink>
+            <NavLink
+              to="/ulpin"
+              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
+              title="3D unit tree — floors, ULPINs, owners per building"
+            >
+              <Layers size={14} /> 3D Unit Tree
+            </NavLink>
+          </>
+        ) : (
+          <>
+            <NavLink
+              to="/dashboard"
+              end
+              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
+              title={isRegistrar ? 'Registrar GIS Dashboard & Pending Confirmations' : 'Surveyor Dashboard'}
+            >
+              <Building2 size={14} /> {isRegistrar ? 'Registrar Dashboard' : 'Dashboard'}
+            </NavLink>
+            <NavLink
+              to="/ulpin"
+              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
+              title="3D unit tree — floors, ULPINs, owners per building"
+            >
+              <Layers size={14} /> 3D Unit Tree
+            </NavLink>
+            <NavLink
+              to="/portal/records"
+              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
+              title="Browse City Cadastre Records"
+            >
+              <FileText size={14} /> Records
+            </NavLink>
+          </>
+        )}
       </nav>
+
+      {/* Registrar search or citizen quick-search */}
       {children}
-      <div className="session-box">
-        <div className="session-user">
-          <span className="session-name">{session.name}</span>
-          <span className={`session-role role-${session.role}`}>{ROLE_LABELS[session.role]}</span>
+      {isCitizen && !children && (
+        <form onSubmit={handleSearch} className="top-search citizen-top-search" style={{ margin: '0 8px' }}>
+          <input
+            className="search"
+            placeholder="Search ULPIN / property ID…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            style={{ width: '210px', height: '32px', fontSize: '12px' }}
+          />
+        </form>
+      )}
+
+      {/* Interactive Role Switcher */}
+      <div className="role-switcher-wrap" aria-label="Demo Role Switcher">
+        <span className="role-label-text">Role:</span>
+        <div className="role-pill-group">
+          <button
+            type="button"
+            className={`role-pill-btn role-pill-citizen ${session?.role === 'citizen' ? 'active' : ''}`}
+            onClick={() => onSwitchRole?.('citizen')}
+            title="Switch to Citizen View"
+          >
+            👤 Citizen
+          </button>
+          <button
+            type="button"
+            className={`role-pill-btn role-pill-registrar ${session?.role === 'registrar' ? 'active' : ''}`}
+            onClick={() => onSwitchRole?.('registrar')}
+            title="Switch to Registrar View"
+          >
+            🏛️ Registrar
+          </button>
+          <button
+            type="button"
+            className={`role-pill-btn role-pill-surveyor ${session?.role === 'surveyor' ? 'active' : ''}`}
+            onClick={() => onSwitchRole?.('surveyor')}
+            title="Switch to Surveyor View"
+          >
+            📐 Surveyor
+          </button>
         </div>
-        <button className="btn" onClick={onLogout}>
-          log out
+      </div>
+
+      {/* User Session profile badge */}
+      <div className="session-box">
+        <div className="session-user-badge">
+          <div className="user-avatar">{initials}</div>
+          <div className="session-meta">
+            <span className="session-name">{displayName}</span>
+            <span className={`session-role role-${session?.role || 'citizen'}`}>{roleName}</span>
+          </div>
+        </div>
+        <button className="btn-logout" onClick={() => { onLogout?.(); navigate('/'); }} title="Log out of session">
+          <LogOut size={13} />
+          <span>Log out</span>
         </button>
       </div>
     </header>
@@ -151,7 +380,8 @@ function bboxOfFeature(feature) {
   }
 }
 
-function Dashboard({ session, onLogout }) {
+function Dashboard({ session, onLogout, onSwitchRole }) {
+  if (!session) return <Navigate to="/" replace />
   const [state, setState] = useState('loading') // loading | ready | empty | unavailable
   const [features, setFeatures] = useState([])
   const [sessions, setSessions] = useState([])
@@ -331,10 +561,10 @@ function Dashboard({ session, onLogout }) {
       .catch((e) => console.error('session delete failed:', e))
   }
 
-  const canEdit = session.role === 'surveyor' // surveyor manages scan sessions
-  const isRegistrar = session.role === 'registrar'
-  const isCitizen = session.role === 'citizen'
-  const canEditBuildings = session.role !== 'citizen' // surveyor or registrar
+  const canEdit = session?.role === 'surveyor' // surveyor manages scan sessions
+  const isRegistrar = session?.role === 'registrar'
+  const isCitizen = session?.role === 'citizen'
+  const canEditBuildings = session?.role !== 'citizen' // surveyor or registrar
   const navigate = useNavigate()
   // citizens land on their portfolio dashboard; the map is one click away
   const [citizenMapView, setCitizenMapView] = useState(false)
@@ -371,6 +601,42 @@ function Dashboard({ session, onLogout }) {
     window.addEventListener('demo-units-changed', bump)
     return () => window.removeEventListener('demo-units-changed', bump)
   }, [])
+
+  // Pending unit corrections (reactive — refreshed on any edit)
+  const [pendingUnitEdits, setPendingUnitEdits] = useState(() => getPendingUnitEdits())
+  useEffect(() => {
+    const refresh = () => setPendingUnitEdits(getPendingUnitEdits())
+    window.addEventListener('demo-pending-unit-edits-changed', refresh)
+    window.addEventListener('demo-units-changed', refresh)
+    return () => {
+      window.removeEventListener('demo-pending-unit-edits-changed', refresh)
+      window.removeEventListener('demo-units-changed', refresh)
+    }
+  }, [])
+
+  const [rejectUnitId, setRejectUnitId] = useState(null)
+  const [rejectUnitReason, setRejectUnitReason] = useState('')
+
+  const handleApproveUnitEdit = async (editId) => {
+    try {
+      await confirmUnitCorrection(editId, session)
+      showToast('success', '✓ Unit correction approved')
+    } catch (e) {
+      showToast('info', `Error: ${e.message}`)
+    }
+  }
+
+  const handleRejectUnitEdit = async () => {
+    if (!rejectUnitId) return
+    try {
+      await rejectUnitCorrection(rejectUnitId, session, rejectUnitReason)
+      setRejectUnitId(null)
+      setRejectUnitReason('')
+      showToast('info', 'Unit correction rejected')
+    } catch (e) {
+      showToast('info', `Error: ${e.message}`)
+    }
+  }
 
   const unitIndex = useMemo(() => {
     const byId = new Map(features.map((f) => [f.properties.building_id, f]))
@@ -650,8 +916,8 @@ function Dashboard({ session, onLogout }) {
   // citizens land on their portfolio dashboard; the map is one click away
   if (isCitizen && !citizenMapView) {
     return (
-      <div className="app">
-        <Topbar session={session} onLogout={onLogout} />
+      <div className="app min-h-screen citizen-dash" style={{ background: '#F5F6F8', color: '#1C2530', overflowY: 'auto' }}>
+        <Topbar session={session} onLogout={onLogout} onSwitchRole={onSwitchRole} />
         <CitizenDashboard
           session={session}
           onOpenMap={(id) => {
@@ -668,7 +934,7 @@ function Dashboard({ session, onLogout }) {
 
   return (
     <div className="app">
-      <Topbar session={session} onLogout={onLogout}>
+      <Topbar session={session} onLogout={onLogout} onSwitchRole={onSwitchRole}>
         {isRegistrar && (
           <div className="top-search">
             <input
@@ -776,12 +1042,15 @@ function Dashboard({ session, onLogout }) {
 
         <aside className="sidebar">
           {isRegistrar && (
-            <div className="tab-btns">
+          <div className="tab-btns">
               <button className={`btn nav-sessions ${panelTab === 'sessions' ? 'primary' : ''}`} onClick={() => setPanelTab('sessions')}>
                 scan sessions
               </button>
               <button className={`btn nav-confirmations ${panelTab === 'confirmations' ? 'primary' : ''}`} onClick={() => setPanelTab('confirmations')}>
-                ⚑ confirmations{pendingFeatures.length ? ` (${pendingFeatures.length})` : ''}
+                ⚑ confirmations
+                {(pendingFeatures.length + pendingUnitEdits.length) > 0 && (
+                  <span className="pending-unit-badge">{pendingFeatures.length + pendingUnitEdits.length}</span>
+                )}
               </button>
             </div>
           )}
@@ -885,7 +1154,7 @@ function Dashboard({ session, onLogout }) {
 
           {isRegistrar && panelTab === 'confirmations' && (
             <div className="panel-section acc-clay">
-              <h3>pending confirmations ({pendingFeatures.length})</h3>
+              <h3>building edits ({pendingFeatures.length})</h3>
               {pendingFeatures.length ? (
                 pendingFeatures.map((f) => {
                   const last = (f.properties.edit_history || []).slice(-1)[0]
@@ -904,8 +1173,71 @@ function Dashboard({ session, onLogout }) {
                   )
                 })
               ) : (
-                <p className="all-clear tiny">✓ nothing awaiting confirmation — all surveyor edits are resolved.</p>
+                <p className="all-clear tiny">✓ no building edits awaiting confirmation.</p>
               )}
+
+              <div style={{ marginTop: 16 }}>
+                <h3 style={{ marginBottom: 8 }}>
+                  unit corrections
+                  {pendingUnitEdits.length > 0 && (
+                    <span className="pending-unit-badge" style={{ marginLeft: 8 }}>{pendingUnitEdits.length}</span>
+                  )}
+                </h3>
+                {pendingUnitEdits.length ? (
+                  pendingUnitEdits.map((e) => (
+                    <div key={e.id} className="pending-row" style={{ flexDirection: 'column', gap: 6, alignItems: 'stretch' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span className="mono tiny">{e.unit_ulpin}</span>
+                        <span className="muted tiny">{new Date(e.created_at).toLocaleTimeString()}</span>
+                      </div>
+                      <span className="muted tiny">by {e.proposed_by} · bldg {e.building_id}</span>
+                      <table className="diff-table" style={{ marginTop: 4 }}>
+                        <thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead>
+                        <tbody>
+                          {Object.keys(e.after).filter((k) => String(e.before[k]) !== String(e.after[k])).map((k) => (
+                            <tr key={k} className="diff-changed">
+                              <td>{k.replace(/_/g, ' ')}</td>
+                              <td className="diff-before">{e.before[k] ?? '—'}</td>
+                              <td className="diff-after">{e.after[k] ?? '—'}</td>
+                            </tr>
+                          ))}
+                          <tr className="diff-overlap-row">
+                            <td>overlap vol</td>
+                            <td className="diff-before">{e.overlap_before_m3} m³</td>
+                            <td className="diff-after">{e.overlap_after_m3} m³</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      {e.resolution_note && <p className="muted tiny">Note: {e.resolution_note}</p>}
+                      {rejectUnitId === e.id ? (
+                        <div className="reject-dialog" style={{ margin: '4px 0 0' }}>
+                          <textarea
+                            className="reject-textarea"
+                            rows={2}
+                            placeholder="Rejection reason…"
+                            value={rejectUnitReason}
+                            onChange={(ev) => setRejectUnitReason(ev.target.value)}
+                          />
+                          <div className="btn-row">
+                            <button className="btn danger" onClick={handleRejectUnitEdit}>Confirm Reject</button>
+                            <button className="btn" onClick={() => { setRejectUnitId(null); setRejectUnitReason('') }}>Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="btn-row" style={{ marginTop: 4 }}>
+                          <button className="btn primary" onClick={() => handleApproveUnitEdit(e.id)}>✓ Approve</button>
+                          <button className="btn danger" onClick={() => { setRejectUnitId(e.id); setRejectUnitReason('') }}>✗ Reject</button>
+                          <button className="btn" onClick={() => navigate(`/ulpin?building=${encodeURIComponent(e.building_id)}`)}>
+                            view unit
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="all-clear tiny">✓ no unit corrections pending.</p>
+                )}
+              </div>
             </div>
           )}
 

@@ -172,12 +172,6 @@ function Hero({ openLogin }) {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.01, delay: 0.06 }}
       >
-        <motion.p
-          className="text-[11px] tracking-[0.24em] uppercase text-[#86868B]"
-          {...heroPop(0.08, 0.9)}
-        >
-          SIH26095 · Smart India Hackathon 2026
-        </motion.p>
         <motion.h1
           className="mt-6 text-[clamp(52px,8.5vw,110px)] leading-[1.01] font-bold tracking-[-0.04em] text-white"
           {...heroPop(0.14, 0.72)}
@@ -195,12 +189,6 @@ function Hero({ openLogin }) {
           <PillPrimary onClick={() => openLogin('citizen')}>Launch the demo</PillPrimary>
           <PillGhost href="#problem">Explore the system</PillGhost>
         </motion.div>
-        <motion.p
-          className="mt-9 text-[11px] tracking-[0.08em] text-[#86868B] font-mono"
-          {...heroPop(0.3, 0.95)}
-        >
-          TN-02-6001-2345-6789 · G+4 · B1 · 15 units
-        </motion.p>
       </motion.div>
       <div className="absolute bottom-9 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-3">
         <span className="text-[10px] tracking-[0.24em] uppercase text-[#86868B]">Scroll</span>
@@ -376,9 +364,6 @@ function FooterCta({ openLogin }) {
           <h2 className="text-[clamp(30px,4.5vw,54px)] font-bold tracking-[-0.03em] text-white leading-[1.08]">
             Ownership, in every dimension.
           </h2>
-          <p className="mt-6 text-[#86868B] text-[15px] leading-[1.7]">
-            Layerd — built for SIH26095. Seed data from real OpenStreetMap footprints in Adyar, Chennai.
-          </p>
           <div className="mt-10 flex gap-4 justify-center flex-wrap">
             <PillPrimary onClick={() => openLogin('citizen')}>Launch the demo</PillPrimary>
             <PillGhost href="https://github.com/">GitHub</PillGhost>
