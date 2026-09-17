@@ -61,12 +61,20 @@ export default function UnifiedPropertyCard() {
           <MapInset ulpin={b.baseUlpin} />
         </div>
 
-        <button
-          onClick={() => navigate(`/portal/building/${b.id}/3d`)}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-surface border border-line text-ink text-sm font-semibold rounded-[10px] px-4 py-2.5 hover:bg-neutralbg"
-        >
-          <Box size={15} /> View Full Building in 3D
-        </button>
+        <div className="flex gap-2.5 mt-3">
+          <button
+            onClick={() => navigate(`/portal/passport/${b.units[0]?.id || 'unit-2'}`)}
+            className="flex-1 inline-flex items-center justify-center gap-2 bg-[#8B6508] text-white text-xs font-bold rounded-[10px] px-3 py-2.5 hover:bg-[#6D4F05] shadow-xs"
+          >
+            <ShieldCheck size={15} /> Official UPC Certificate &amp; Deed
+          </button>
+          <button
+            onClick={() => navigate(`/portal/building/${b.id}/3d`)}
+            className="flex-1 inline-flex items-center justify-center gap-2 bg-surface border border-line text-ink text-xs font-bold rounded-[10px] px-3 py-2.5 hover:bg-neutralbg"
+          >
+            <Box size={15} /> View Building 3D
+          </button>
+        </div>
 
         <div className="bg-surface border border-line rounded-[12px] p-4 mt-3">
           <h3 className="text-sm font-bold text-ink mb-1">

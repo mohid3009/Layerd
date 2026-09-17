@@ -1,8 +1,10 @@
 // One-off converter: raw Overpass JSON → baked demo dataset for the frontend.
 // Usage: node convert_chennai.cjs
 const fs = require('fs')
+const path = require('path')
 
-const raw = JSON.parse(fs.readFileSync('chennai_raw.json', 'utf8'))
+const rawPath = path.resolve(__dirname, '../chennai_raw.json')
+const raw = JSON.parse(fs.readFileSync(rawPath, 'utf8'))
 
 const BBOX = { minLat: 13.028, maxLat: 13.052, minLon: 80.215, maxLon: 80.248 }
 const CAP = 6000 // keep the GPU happy — tagged buildings are kept first
@@ -107,10 +109,13 @@ const tagged = features.filter((f) => f.properties.source === 'osm-levels')
 const rest = features.filter((f) => f.properties.source !== 'osm-levels')
 const kept = [...tagged, ...rest].slice(0, CAP)
 
-fs.writeFileSync(
-  '3d_map/frontend/src/data/chennai_buildings.json',
-  JSON.stringify({ type: 'FeatureCollection', features: kept }),
-)
+const outData = JSON.stringify({ type: 'FeatureCollection', features: kept })
+const publicOut = path.resolve(__dirname, '../3d_map/frontend/public/chennai_buildings.json')
+const srcOut = path.resolve(__dirname, '../3d_map/frontend/src/data/chennai_buildings.json')
+fs.writeFileSync(publicOut, outData)
+if (fs.existsSync(path.dirname(srcOut))) {
+  fs.writeFileSync(srcOut, outData)
+}
 console.log(`raw features: ${features.length} (tagged ${tagged.length}) → kept ${kept.length}`)
 console.log(`total storey slices: ${kept.reduce((s, f) => s + f.properties.stories, 0)}`)
 

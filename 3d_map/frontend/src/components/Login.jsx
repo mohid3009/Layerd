@@ -86,6 +86,7 @@ export default function Login({ onLogin, onBack, initialRole = 'citizen' }) {
               type="button"
               className={`login-role ${role === r.id ? 'active' : ''}`}
               onClick={() => pickRole(r)}
+              disabled={busy}
             >
               <span className="login-role-icon">{r.icon}</span>
               <span>
@@ -104,6 +105,7 @@ export default function Login({ onLogin, onBack, initialRole = 'citizen' }) {
             placeholder={active.username}
             autoFocus
             autoComplete="username"
+            disabled={busy}
           />
         </label>
         <label className="login-field">
@@ -114,6 +116,7 @@ export default function Login({ onLogin, onBack, initialRole = 'citizen' }) {
             onChange={(e) => { setPassword(e.target.value); setError(null) }}
             placeholder="••••••••"
             autoComplete="current-password"
+            disabled={busy}
           />
         </label>
 

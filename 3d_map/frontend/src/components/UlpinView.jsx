@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
-import { getSavedBuildings, fetchUnits, generateUnits, deleteUnits, updateUnit, digipin, allUnits, demoBaseUlpin, detectVolumetricOverlaps, overlapsForUnit, unitZRange, proposeUnitCorrection, confirmUnitCorrection, rejectUnitCorrection, getPendingUnitEdits } from '../api.js'
+import { getSavedBuildings, fetchUnits, generateUnits, deleteUnits, updateUnit, digipin, allUnits, demoBaseUlpin, detectVolumetricOverlaps, overlapsForUnit, unitZRange, proposeUnitCorrection, confirmUnitCorrection, rejectUnitCorrection, getPendingUnitEdits, proposeBuildingEdit } from '../api.js'
 import BuildingsMap from './BuildingsMap.jsx'
+import { TIME_LIGHTING_PRESETS } from '../constants.js'
 
 const FH = 3 // storey height used by the generator (m)
 const FLOOR_GAP = 0.7 // vertical gap between floors (m) — keeps every level visible in 3D
@@ -19,29 +20,37 @@ function floorColor(floorIndex, maxFloor) {
 function bboxOf(feature) {
   const ring = feature?.geometry?.coordinates?.[0]
   if (!ring?.length) return null
-  const lats = ring.map((c) => c[1])
-  const lons = ring.map((c) => c[0])
+  // Use a loop instead of Math.min/max spread to avoid RangeError on large rings
+  let latMin = Infinity, latMax = -Infinity, lonMin = Infinity, lonMax = -Infinity
+  for (const [lon, lat] of ring) {
+    if (lat < latMin) latMin = lat
+    if (lat > latMax) latMax = lat
+    if (lon < lonMin) lonMin = lon
+    if (lon > lonMax) lonMax = lon
+  }
   return {
-    latMin: Math.min(...lats),
-    lonMin: Math.min(...lons),
-    spanLat: Math.max(...lats) - Math.min(...lats),
-    spanLon: Math.max(...lons) - Math.min(...lons),
+    latMin,
+    lonMin,
+    spanLat: latMax - latMin,
+    spanLon: lonMax - lonMin,
   }
 }
 
-function UnitMesh({ unit, w, d, fh, color, selected, onPick }) {
+const UnitMesh = React.memo(function UnitMesh({ unit, w, d, fh, floorGap, color, selected, onPick }) {
   const geo = useMemo(() => {
     const shape = new THREE.Shape(
       unit.polygon.map(([x, y]) => new THREE.Vector2(x * w - w / 2, y * d - d / 2)),
     )
-    const g = new THREE.ExtrudeGeometry(shape, { depth: fh * 0.88, bevelEnabled: false })
+    const g = new THREE.ExtrudeGeometry(shape, { depth: fh, bevelEnabled: false })
     g.rotateX(-Math.PI / 2) // extrude upward, footprint flat on the ground plane
     return g
   }, [unit, w, d, fh])
+  const f = unit.floor_index
+  const yPos = f < 0 ? f * (fh + floorGap) : (f - 1) * (fh + floorGap)
   return (
     <mesh
       geometry={geo}
-      position={[0, unit.floor_index * (fh + FLOOR_GAP), 0]}
+      position={[0, yPos, 0]}
       castShadow
       receiveShadow
       onClick={(e) => {
@@ -58,9 +67,12 @@ function UnitMesh({ unit, w, d, fh, color, selected, onPick }) {
       />
     </mesh>
   )
-}
+})
 
-export default function UlpinView({ session, initialBuilding = null }) {
+export default function UlpinView({ session }) {
+  const [searchParams] = useSearchParams()
+  // Support deep-link: /ulpin?building=<id> (navigated from the dashboard map)
+  const initialBuilding = searchParams.get('building')
   const bootstrappedRef = useRef(false)
   const canManage = session?.role !== 'citizen'
   const isSurveyor = session?.role === 'surveyor'
@@ -72,6 +84,8 @@ export default function UlpinView({ session, initialBuilding = null }) {
   const [floors, setFloors] = useState(3)
   const [basements, setBasements] = useState(0)
   const [fh, setFh] = useState(3)
+  const [floorGap, setFloorGap] = useState(1.2) // dynamic height between exploded slices (m), default 1.2m
+  const [timeOfDay, setTimeOfDay] = useState('noon') // solar lighting preset ('dawn' | 'noon' | 'dusk' | 'night')
   const [planFile, setPlanFile] = useState(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
@@ -175,6 +189,14 @@ export default function UlpinView({ session, initialBuilding = null }) {
   const selected = buildings.find((b) => b.properties.building_id === selId) || null
 
   const selectBuilding = (bid, ulpin = null) => {
+    if (!bid) {
+      setSelId(null)
+      setSelUlpin(null)
+      setUnits([])
+      setMsg(null)
+      setErr(null)
+      return
+    }
     setSelId(bid)
     setSelUlpin(ulpin)
     setUnits([])
@@ -219,6 +241,37 @@ export default function UlpinView({ session, initialBuilding = null }) {
         setMsg('units cleared')
       })
       .catch(() => {})
+  }
+
+  const handleBuildingHeightAndPlanSave = async () => {
+    if (!selId) return
+    setBusy(true)
+    setErr(null)
+    setMsg(null)
+    try {
+      const res = await proposeBuildingEdit(
+        selId,
+        {
+          stories: floors,
+          basements,
+          height_m: floors * fh,
+          asset_type: 'Floor Plan / Architectural CAD',
+          note: `Height & floor plan updated from 3D ULPIN View by ${session?.role}`,
+        },
+        session,
+        planFile
+      )
+      if (res.pending) {
+        setMsg(`Height change & floor plan proposal submitted for Registrar review.`)
+      } else {
+        setMsg(`✓ Building height (${floors * fh}m, ${floors} storeys) & floor plan updated live!`)
+        getSavedBuildings().then(setBuildings)
+      }
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setBusy(false)
+    }
   }
 
   // leave edit mode whenever the selected unit or building changes
@@ -400,7 +453,7 @@ export default function UlpinView({ session, initialBuilding = null }) {
   const maxFloor = displayUnits.reduce((m, u) => Math.max(m, u.floor_index), 1)
   const minFloor = displayUnits.reduce((m, u) => Math.min(m, u.floor_index), 0)
   // exploded stack size — drives camera framing and the shadow camera bounds
-  const totalH = (maxFloor - minFloor + 2) * (FH + FLOOR_GAP)
+  const totalH = (maxFloor - minFloor + 2) * (FH + floorGap)
   const span = Math.max(dims ? Math.max(dims.w, dims.d) : 10, totalH) * 2.2
   const baseUlpin = units[0]?.base_ulpin || null
 
@@ -421,57 +474,93 @@ export default function UlpinView({ session, initialBuilding = null }) {
             features={buildings}
             selectedId={selId}
             onSelect={(bid) => selectBuilding(bid)}
+            floorGap={floorGap}
+            onFloorGapChange={setFloorGap}
           />
           {!selId && (
             <div className="map-note muted tiny">
               click a building on the map to open its 3D ULPIN unit tree
             </div>
           )}
-          {selId && dims && (
-            <div className="ulpin-3d">
-              <div className="ulpin-3d-bar">
-                <button className="btn tiny" onClick={() => setSelId(null)}>← choose on map</button>
-                <span className="mono tiny">{selected?.properties.name || selId}</span>
-                {baseUlpin && <span className="muted tiny mono">base {baseUlpin}</span>}
-              </div>
-              <div className="ulpin-3d-stage">
-                <Canvas
-                  shadows
-                  camera={{
-                    position: [
-                      0,
-                      Math.max(dims.w, dims.d) * 1.3 + totalH * 0.9,
-                      Math.max(dims.w, dims.d) * 1.6 + totalH * 0.55,
-                    ],
-                    fov: 42,
-                    near: 0.1,
-                    far: 12000,
-                  }}
-                >
-                  <ambientLight intensity={0.8} />
-                  <directionalLight
-                    position={[dims.w * 1.2, (maxFloor + 4) * (FH + FLOOR_GAP) + dims.d, dims.d * 1.2]}
-                    intensity={1.05}
-                    castShadow
-                    shadow-mapSize-width={2048}
-                    shadow-mapSize-height={2048}
-                    shadow-camera-near={1}
-                    shadow-camera-far={span * 8}
-                    shadow-camera-left={-span}
-                    shadow-camera-right={span}
-                    shadow-camera-top={span}
-                    shadow-camera-bottom={-span}
-                  />
-                  <gridHelper args={[Math.max(dims.w, dims.d) * 4, 24, '#2c2c2c', '#1c1c1c']} />
-                  {/* shadow catcher — a plane just below the lowest level */}
-                  <mesh
-                    receiveShadow
-                    rotation={[-Math.PI / 2, 0, 0]}
-                    position={[0, minFloor * (FH + FLOOR_GAP) - 0.02, 0]}
+          {selId && dims && (() => {
+            const threePreset = TIME_LIGHTING_PRESETS[timeOfDay]?.three || TIME_LIGHTING_PRESETS.noon.three
+            return (
+              <div className="ulpin-3d" style={{ background: threePreset.bgColor }}>
+                <div className="ulpin-3d-bar">
+                  <button className="btn tiny" onClick={() => selectBuilding(null)}>← choose on map</button>
+                  <span className="mono tiny">{selected?.properties.name || selId}</span>
+                  {baseUlpin && <span className="muted tiny mono">base {baseUlpin}</span>}
+                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted)' }} title="Adjust sun lighting and ambient color according to time of day">
+                      <span>sun</span>
+                      <select
+                        value={timeOfDay}
+                        onChange={(e) => setTimeOfDay(e.target.value)}
+                        style={{ background: 'var(--panel2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 4, padding: '2px 6px', fontSize: 11 }}
+                      >
+                        {Object.values(TIME_LIGHTING_PRESETS).map((t) => (
+                          <option key={t.key} value={t.key}>{t.shortLabel}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="tiny muted">slice gap</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="4"
+                        step="0.1"
+                        value={floorGap}
+                        onChange={(e) => setFloorGap(parseFloat(e.target.value) || 0)}
+                        style={{ width: 90, cursor: 'pointer' }}
+                      />
+                      <span className="mono tiny">{floorGap.toFixed(1)}m</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="ulpin-3d-stage">
+                  <Canvas
+                    shadows
+                    camera={{
+                      position: [
+                        0,
+                        Math.max(dims.w, dims.d) * 1.3 + totalH * 0.9,
+                        Math.max(dims.w, dims.d) * 1.6 + totalH * 0.55,
+                      ],
+                      fov: 42,
+                      near: 0.1,
+                      far: 12000,
+                    }}
                   >
-                    <planeGeometry args={[span * 8, span * 8]} />
-                    <shadowMaterial transparent opacity={0.38} />
-                  </mesh>
+                    <ambientLight intensity={threePreset.ambientIntensity} color={threePreset.ambientColor} />
+                    <directionalLight
+                      position={[
+                        dims.w * threePreset.sunPosOffset[0],
+                        (maxFloor + 4) * (FH + floorGap) * threePreset.sunPosOffset[1] + dims.d,
+                        dims.d * threePreset.sunPosOffset[2],
+                      ]}
+                      color={threePreset.sunColor}
+                      intensity={threePreset.sunIntensity}
+                      castShadow
+                      shadow-mapSize-width={2048}
+                      shadow-mapSize-height={2048}
+                      shadow-camera-near={1}
+                      shadow-camera-far={span * 8}
+                      shadow-camera-left={-span}
+                      shadow-camera-right={span}
+                      shadow-camera-top={span}
+                      shadow-camera-bottom={-span}
+                    />
+                    <gridHelper args={[Math.max(dims.w, dims.d) * 4, 24, '#2c2c2c', '#1c1c1c']} />
+                    {/* shadow catcher — a plane just below the lowest level */}
+                    <mesh
+                      receiveShadow
+                      rotation={[-Math.PI / 2, 0, 0]}
+                      position={[0, minFloor * (FH + floorGap) - 0.02, 0]}
+                    >
+                      <planeGeometry args={[span * 8, span * 8]} />
+                      <shadowMaterial transparent opacity={0.38} />
+                    </mesh>
                   {displayUnits.map((u) => (
                     <UnitMesh
                       key={u.unit_ulpin}
@@ -479,16 +568,17 @@ export default function UlpinView({ session, initialBuilding = null }) {
                       w={dims.w}
                       d={dims.d}
                       fh={FH}
+                      floorGap={floorGap}
                       color={floorColor(u.floor_index, maxFloor)}
                       selected={selUlpin === u.unit_ulpin}
                       onPick={(unit) => setSelUlpin(unit.unit_ulpin)}
                     />
                   ))}
-                  <OrbitControls />
+                  <OrbitControls autoRotate autoRotateSpeed={1.0} enableDamping dampingFactor={0.05} />
                 </Canvas>
               </div>
             </div>
-          )}
+          )})}
         </section>
 
         <aside className="sidebar">
@@ -555,8 +645,8 @@ export default function UlpinView({ session, initialBuilding = null }) {
                 <>
                   <div className="edit-form">
                     <label>
-                      <span>floors</span>
-                      <input type="number" min="1" max="60" value={floors} onChange={(e) => setFloors(Math.max(1, parseInt(e.target.value) || 1))} />
+                      <span>floors (max 10)</span>
+                      <input type="number" min="1" max="10" value={floors} onChange={(e) => setFloors(Math.min(10, Math.max(1, parseInt(e.target.value) || 1)))} />
                     </label>
                     <label>
                       <span>basements</span>
@@ -566,15 +656,44 @@ export default function UlpinView({ session, initialBuilding = null }) {
                       <span>floor h (m)</span>
                       <input type="number" min="0.5" step="0.1" value={fh} onChange={(e) => setFh(Math.max(0.5, parseFloat(e.target.value) || 3))} />
                     </label>
+                    <label style={{ gridColumn: '1 / -1', marginTop: 4 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span>slice gap (exploded height)</span>
+                        <b className="mono">{floorGap.toFixed(1)} m</b>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="4"
+                        step="0.1"
+                        value={floorGap}
+                        onChange={(e) => setFloorGap(parseFloat(e.target.value) || 0)}
+                        style={{ width: '100%', cursor: 'pointer' }}
+                      />
+                    </label>
                   </div>
                   <label className="upload-field">
-                    <span>floor plan image (YOLOv11-seg)</span>
-                    <input type="file" accept=".png,.jpg,.jpeg" onChange={(e) => setPlanFile(e.target.files[0] || null)} />
+                    <span>floor plan / CAD drawing (.dwg, .dxf, .pdf, .svg, .png, .jpg, .zip, .ifc)</span>
+                    <input
+                      type="file"
+                      accept=".dwg,.dxf,.pdf,.svg,.png,.jpg,.jpeg,.zip,.ifc,.gltf,.glb"
+                      onChange={(e) => setPlanFile(e.target.files[0] || null)}
+                    />
                   </label>
-                  <div className="btn-row">
-                    <button className="btn primary" disabled={busy} onClick={generate}>
-                      {busy ? 'generating…' : 'generate units'}
-                    </button>
+                  {planFile && (
+                    <div className="mono tiny" style={{ color: 'var(--accent)', marginBottom: 6 }}>
+                      Attached: {planFile.name} ({(planFile.size / (1024 * 1024)).toFixed(2)} MB)
+                    </div>
+                  )}
+                  <div className="btn-row" style={{ flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, width: '100%' }}>
+                      <button className="btn primary" style={{ flex: 1 }} disabled={busy} onClick={handleBuildingHeightAndPlanSave}>
+                        {session?.role === 'surveyor' ? 'Propose Height & Floor Plan' : 'Save Height & Floor Plan'}
+                      </button>
+                      <button className="btn" style={{ flex: 1 }} disabled={busy} onClick={generate}>
+                        {busy ? 'generating…' : 'generate 3D units'}
+                      </button>
+                    </div>
                     {units.length > 0 && (
                       <button className="btn danger" onClick={clear}>clear units</button>
                     )}
@@ -604,7 +723,7 @@ export default function UlpinView({ session, initialBuilding = null }) {
             </div>
           )}
 
-          {byFloor.length > 0 && (
+          {selected && byFloor.length > 0 && (
             <div className="panel-section acc-green">
               <h3>units ({units.length})</h3>
               {byFloor.map(([floor, us]) => (
@@ -622,8 +741,8 @@ export default function UlpinView({ session, initialBuilding = null }) {
                         className={`nav-row ${selUlpin === u.unit_ulpin ? 'active' : ''} ${hasOverlap ? 'nav-row-overlap' : ''}`}
                         onClick={() => setSelUlpin(u.unit_ulpin)}
                       >
-                        <span className="session-label mono tiny" title={u.unit_ulpin}>
-                          {u.unit_ulpin}
+                        <span className="session-label mono tiny" title={u.subunit_name ? `${u.subunit_name} (${u.unit_ulpin})` : u.unit_ulpin}>
+                          {u.subunit_name ? u.subunit_name : u.unit_ulpin}
                           {hasPending && <span className="badge-pending-dot" title="Pending approval"> ●</span>}
                           {hasOverlap && !hasPending && <span className="badge-overlap-dot" title="Overlap detected"> ⚠</span>}
                         </span>
@@ -808,6 +927,9 @@ export default function UlpinView({ session, initialBuilding = null }) {
                   <table className="kv">
                     <tbody>
                       <tr><td>ULPIN</td><td className="mono">{selUnit.unit_ulpin}</td></tr>
+                      {selUnit.subunit_id && <tr><td>subunit id</td><td className="mono">{selUnit.subunit_id}</td></tr>}
+                      {selUnit.subunit_name && <tr><td>subunit name</td><td><strong>{selUnit.subunit_name}</strong></td></tr>}
+                      {selUnit.subunit_type && <tr><td>subunit type</td><td>{selUnit.subunit_type}</td></tr>}
                       <tr><td>DIGIPIN</td><td className="mono">{unitGeo(selUnit)?.digipin || '—'}</td></tr>
                       <tr><td>building</td><td>{selected?.properties.name || selId}</td></tr>
                       <tr><td>floor</td><td>{selUnit.floor_index < 0 ? `basement ${-selUnit.floor_index}` : `floor ${selUnit.floor_index}`}</td></tr>

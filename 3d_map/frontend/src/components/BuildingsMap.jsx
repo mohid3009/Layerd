@@ -3,6 +3,7 @@ import { Map as MapLibreMap, NavigationControl, Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { peekUnits, demoBaseUlpin, demoOwner, digipin } from '../api.js'
 import { floorSlices, shadowFeatures, unitSliceFeatures } from '../floors.js'
+import { TIME_LIGHTING_PRESETS } from '../constants.js'
 
 // Keyless tile providers (no {r} placeholder — MapLibre does not expand it).
 const TILES = {
@@ -52,9 +53,18 @@ export default function BuildingsMap({
   canEdit = false,
   onFootprintDrawn = null,
   ownedIds = null, // citizen view: building_ids the signed-in citizen owns
+  floorGap = 1.2, // explosion gap between floor slices (m), default 1.2m
+  onFloorGapChange = null,
 }) {
   const [tileStyle, setTileStyle] = useState('satellite')
+  const [timeOfDay, setTimeOfDay] = useState('noon')
   const [drawMode, setDrawMode] = useState(false)
+  const [mapFloorGap, setMapFloorGap] = useState(floorGap)
+
+  useEffect(() => {
+    setMapFloorGap(floorGap)
+  }, [floorGap])
+
   // bumped whenever generated units change anywhere (generate/clear/edit) —
   // the selected building's section slices on the map follow its units
   const [unitsVersion, setUnitsVersion] = useState(0)
@@ -70,9 +80,20 @@ export default function BuildingsMap({
   const selectedIdRef = useRef(selectedId)
   selectedIdRef.current = selectedId
 
-  // per-floor render slices — multi-storey buildings get one coloured extrusion
-  // per storey; selection still works via the building_id kept on each slice
-  const renderFeatures = useMemo(() => floorSlices(features), [features])
+  // per-floor render slices — memoize static unselected features so slider dragging
+  // only recomputes the selected building's slices for 60fps responsive explosion
+  const baseStaticSlices = useMemo(() => floorSlices(features, 0, null), [features])
+
+  const renderFeatures = useMemo(() => {
+    if (!selectedId || mapFloorGap === 0) return baseStaticSlices
+    const targetFeature = features.find((x) => x.properties?.building_id === selectedId)
+    if (!targetFeature) return baseStaticSlices
+
+    const targetExplodedSlices = floorSlices([targetFeature], mapFloorGap, selectedId)
+    const remainingSlices = baseStaticSlices.filter((f) => f.properties?.building_id !== selectedId)
+    return [...remainingSlices, ...targetExplodedSlices]
+  }, [features, baseStaticSlices, selectedId, mapFloorGap])
+
   const renderRef = useRef(renderFeatures)
   renderRef.current = renderFeatures
 
@@ -202,19 +223,22 @@ export default function BuildingsMap({
           ? floorUnits[0].owner_name
           : demoOwner(`${p.building_id}:${floor}`)
       const pin = digipin(e.lngLat.lat, e.lngLat.lng)
+      const subTitle = mine?.subunit_name ? ` (${mine.subunit_name})` : ''
+      const subType = mine?.subunit_type ? `<div class="ut-row"><span>type</span><b>${mine.subunit_type}</b></div>` : ''
       const areaNote = mine
         ? `<div class="ut-row"><span>area</span><b>${mine.area_sqm} m²</b></div>`
         : ''
       const unitRows = !mine && floorUnits.length
         ? floorUnits
-            .map((u) => `<div class="ut-row"><span>${u.unit_ulpin.split('-F')[1] || u.unit_ulpin}</span><b>${u.owner_name} · ${u.area_sqm} m²</b></div>`)
+            .map((u) => `<div class="ut-row"><span>${u.subunit_name || u.unit_ulpin.split('-F')[1]}</span><b>${u.owner_name} · ${u.area_sqm} m²</b></div>`)
             .join('')
         : ''
       const slab = Math.max(0, (p.height_m || 0) - (p.base_m || 0))
       tip.innerHTML = `
-        <div class="ut-head">${p.name ? `${p.name} · ` : ''}${floorLabel}</div>
+        <div class="ut-head">${p.name ? `${p.name} · ` : ''}${floorLabel}${subTitle}</div>
         <div class="ut-row"><span>3D ULPIN</span><b class="mono">${ulpin}</b></div>
         <div class="ut-row"><span>DIGIPIN</span><b class="mono">${pin}</b></div>
+        ${subType}
         <div class="ut-row"><span>owner</span><b>${owner}</b></div>
         ${areaNote}
         ${unitRows}
@@ -296,6 +320,7 @@ export default function BuildingsMap({
 
   // push updated features into the source — when the selected building has
   // generated units, its exploded floors render as their ACTUAL sections
+  const rafRef = useRef(null)
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
@@ -304,16 +329,24 @@ export default function BuildingsMap({
       selectedId && selUnits.length
         ? featuresRef.current.find((x) => x.properties?.building_id === selectedId)
         : null
-    const unitSlices = selFeature ? unitSliceFeatures(selFeature, selUnits) : []
+    const unitSlices = selFeature ? unitSliceFeatures(selFeature, selUnits, mapFloorGap) : []
     const layers = unitSlices.length
       ? [
           ...renderFeatures.filter((f) => f.properties?.building_id !== selectedId),
           ...unitSlices,
         ]
       : renderFeatures
-    map.getSource('buildings')?.setData({ type: 'FeatureCollection', features: layers })
-    map.getSource('shadows')?.setData({ type: 'FeatureCollection', features: shadowsRef.current })
-  }, [renderFeatures, selectedId, unitsVersion]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(() => {
+      map.getSource('buildings')?.setData({ type: 'FeatureCollection', features: layers })
+      map.getSource('shadows')?.setData({ type: 'FeatureCollection', features: shadowsRef.current })
+    })
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [renderFeatures, selectedId, unitsVersion, mapFloorGap])
 
   // frame the saved city whenever the underlying data set changes
   useEffect(() => {
@@ -387,18 +420,9 @@ export default function BuildingsMap({
     // selected outline follows the role accent
     map.setPaintProperty('bldg-selected', 'line-color', ownedList.length ? '#8B93E8' : '#FF8A00')
 
-    const EXPLODE_GAP = 5
-    const sliceFloor = ['coalesce', ['get', 'floor'], 1]
-    const explodeOffset = ['*', EXPLODE_GAP, ['-', sliceFloor, 1]]
     const restBase = ['coalesce', ['get', 'base_m'], 0]
-    map.setPaintProperty('bldg-extrude', 'fill-extrusion-base',
-      selectedId
-        ? ['case', ['==', ['get', 'building_id'], selectedId], ['+', restBase, explodeOffset], restBase]
-        : restBase)
-    map.setPaintProperty('bldg-extrude', 'fill-extrusion-height',
-      selectedId
-        ? ['case', ['==', ['get', 'building_id'], selectedId], ['+', ['get', 'height_m'], explodeOffset], ['get', 'height_m']]
-        : ['get', 'height_m'])
+    map.setPaintProperty('bldg-extrude', 'fill-extrusion-base', restBase)
+    map.setPaintProperty('bldg-extrude', 'fill-extrusion-height', ['get', 'height_m'])
 
     // clear the previous basement indicator chip
     if (basementMarkerRef.current) {
@@ -442,6 +466,60 @@ export default function BuildingsMap({
       { padding: 120, maxZoom: 18.5, duration: 900, essential: true },
     )
   }, [selectedId, ownedKey])
+
+  // Smooth base rotation animation around selected building
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !selectedId) return
+
+    let animId = null
+    let lastTime = performance.now()
+    let userInteracting = false
+
+    const onUserStart = () => { userInteracting = true }
+    const onUserEnd = () => {
+      setTimeout(() => { userInteracting = false }, 1200)
+    }
+
+    map.on('dragstart', onUserStart)
+    map.on('rotatestart', onUserStart)
+    map.on('pitchstart', onUserStart)
+    map.on('zoomstart', onUserStart)
+    map.on('dragend', onUserEnd)
+    map.on('rotateend', onUserEnd)
+    map.on('pitchend', onUserEnd)
+    map.on('zoomend', onUserEnd)
+
+    const rotateBase = (now) => {
+      const delta = (now - lastTime) / 1000
+      lastTime = now
+      if (mapRef.current && !userInteracting && !drawModeRef.current) {
+        const curBearing = mapRef.current.getBearing()
+        mapRef.current.setBearing((curBearing + delta * 6) % 360)
+      }
+      animId = requestAnimationFrame(rotateBase)
+    }
+
+    const timer = setTimeout(() => {
+      lastTime = performance.now()
+      animId = requestAnimationFrame(rotateBase)
+    }, 1000)
+
+    return () => {
+      clearTimeout(timer)
+      if (animId) cancelAnimationFrame(animId)
+      if (map) {
+        map.off('dragstart', onUserStart)
+        map.off('rotatestart', onUserStart)
+        map.off('pitchstart', onUserStart)
+        map.off('zoomstart', onUserStart)
+        map.off('dragend', onUserEnd)
+        map.off('rotateend', onUserEnd)
+        map.off('pitchend', onUserEnd)
+        map.off('zoomend', onUserEnd)
+      }
+    }
+  }, [selectedId])
 
   // free-draw mode bookkeeping (cursor, dblclick-zoom, pending shape)
   useEffect(() => {
@@ -503,6 +581,23 @@ export default function BuildingsMap({
     map.setPaintProperty('bldg-line', 'line-color', tileStyle === 'light' ? '#3a3a3a' : '#ffffff')
   }, [tileStyle])
 
+  // time of day solar lighting switch
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    const preset = TIME_LIGHTING_PRESETS[timeOfDay] || TIME_LIGHTING_PRESETS.noon
+    map.setLight({
+      anchor: preset.mapLight.anchor,
+      color: preset.mapLight.color,
+      intensity: preset.mapLight.intensity,
+      position: preset.mapLight.position,
+    })
+    if (map.getLayer('bldg-shadow')) {
+      map.setPaintProperty('bldg-shadow', 'fill-color', preset.shadowColor)
+      map.setPaintProperty('bldg-shadow', 'fill-opacity', preset.shadowOpacity)
+    }
+  }, [timeOfDay])
+
   return (
     <>
       <div className="map-controls">
@@ -514,6 +609,36 @@ export default function BuildingsMap({
             <option value="light">light</option>
           </select>
         </label>
+
+        <label className="tile-toggle" title="Adjust lighting according to time of day">
+          <span>sun</span>
+          <select value={timeOfDay} onChange={(e) => setTimeOfDay(e.target.value)}>
+            {Object.values(TIME_LIGHTING_PRESETS).map((t) => (
+              <option key={t.key} value={t.key}>{t.shortLabel}</option>
+            ))}
+          </select>
+        </label>
+
+        {selectedId && (
+          <label className="tile-toggle map-gap-slider" title="Adjust exploded height gap between floor slices">
+            <span>explode gap</span>
+            <input
+              type="range"
+              min="0"
+              max="4"
+              step="0.1"
+              value={mapFloorGap}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value) || 0
+                setMapFloorGap(val)
+                if (onFloorGapChange) onFloorGapChange(val)
+              }}
+              style={{ width: 80, cursor: 'pointer' }}
+            />
+            <b className="mono tiny">{mapFloorGap.toFixed(1)}m</b>
+          </label>
+        )}
+
         {canEdit && selectedId && (
           <button
             className={`btn ${drawMode ? 'primary' : ''}`}

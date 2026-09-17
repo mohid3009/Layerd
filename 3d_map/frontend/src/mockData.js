@@ -13,10 +13,10 @@ export const buildings = [
     height: 14.6,
     extraction: 'LiDAR point-cloud + AI segmentation',
     units: [
-      { id: 'unit-1', ulpin: 'TN-07-4821-9034-7756-F3-U302', floor: 3, unitLabel: 'Flat 302', owner: 'Ramesh Iyer', area: 84.2, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-09-02' },
-      { id: 'unit-2', ulpin: 'TN-07-4821-9034-7756-F2-U201', floor: 2, unitLabel: 'Flat 201', owner: 'Ramesh Iyer', area: 79.5, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-08-21' },
-      { id: 'unit-3', ulpin: 'TN-07-4821-9034-7756-F1-U104', floor: 1, unitLabel: 'Shop 104', owner: 'Lakshmi Narayanan', area: 42.0, rightsType: 'Leased', status: 'review', lastUpdated: '2026-08-30' },
-      { id: 'unit-4', ulpin: 'TN-07-4821-9034-7756-F4-U401', floor: 4, unitLabel: 'Penthouse 401', owner: 'Priya Sharma', area: 120.4, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-07-19' },
+      { id: 'unit-1', ulpin: 'TN-07-4821-9034-7756-F3-U302', floor: 3, unitLabel: 'Flat 302', owner: 'Citizen 1', area: 84.2, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-09-02' },
+      { id: 'unit-2', ulpin: 'TN-07-4821-9034-7756-F2-U201', floor: 2, unitLabel: 'Flat 201', owner: 'Citizen 1', area: 79.5, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-08-21' },
+      { id: 'unit-3', ulpin: 'TN-07-4821-9034-7756-F1-U104', floor: 1, unitLabel: 'Shop 104', owner: 'Citizen 2', area: 42.0, rightsType: 'Leased', status: 'review', lastUpdated: '2026-08-30' },
+      { id: 'unit-4', ulpin: 'TN-07-4821-9034-7756-F4-U401', floor: 4, unitLabel: 'Penthouse 401', owner: 'Citizen 3', area: 120.4, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-07-19' },
     ],
   },
   {
@@ -29,9 +29,9 @@ export const buildings = [
     height: 10.2,
     extraction: 'LiDAR point-cloud + AI segmentation',
     units: [
-      { id: 'unit-5', ulpin: 'TN-07-5544-2210-1187-F2-U204', floor: 2, unitLabel: 'Flat 204', owner: 'Arun Iyer', area: 88.0, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-08-11' },
-      { id: 'unit-6', ulpin: 'TN-07-5544-2210-1187-F1-U103', floor: 1, unitLabel: 'Flat 103', owner: 'Deepa Krishnan', area: 76.3, rightsType: 'Owned', status: 'review', lastUpdated: '2026-09-01' },
-      { id: 'unit-7', ulpin: 'TN-07-5544-2210-1187-F3-U303', floor: 3, unitLabel: 'Flat 303', owner: 'Suresh Babu', area: 91.7, rightsType: 'Leased', status: 'verified', lastUpdated: '2026-07-28' },
+      { id: 'unit-5', ulpin: 'TN-07-5544-2210-1187-F2-U204', floor: 2, unitLabel: 'Flat 204', owner: 'Citizen 4', area: 88.0, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-08-11' },
+      { id: 'unit-6', ulpin: 'TN-07-5544-2210-1187-F1-U103', floor: 1, unitLabel: 'Flat 103', owner: 'Citizen 5', area: 76.3, rightsType: 'Owned', status: 'review', lastUpdated: '2026-09-01' },
+      { id: 'unit-7', ulpin: 'TN-07-5544-2210-1187-F3-U303', floor: 3, unitLabel: 'Flat 303', owner: 'Citizen 6', area: 91.7, rightsType: 'Leased', status: 'verified', lastUpdated: '2026-07-28' },
     ],
   },
   {
@@ -44,9 +44,9 @@ export const buildings = [
     height: 17.8,
     extraction: 'Drone photogrammetry',
     units: [
-      { id: 'unit-8', ulpin: 'TN-07-6391-8845-2210-F4-U402', floor: 4, unitLabel: 'Flat 402', owner: 'Meena Raghavan', area: 102.6, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-08-05' },
-      { id: 'unit-9', ulpin: 'TN-07-6391-8845-2210-F2-U203', floor: 2, unitLabel: 'Flat 203', owner: 'Ramesh Iyer', area: 81.1, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-08-27' },
-      { id: 'unit-10', ulpin: 'TN-07-6391-8845-2210-F5-U501', floor: 5, unitLabel: 'Flat 501', owner: 'Vijay Anand', area: 118.9, rightsType: 'Owned', status: 'review', lastUpdated: '2026-09-04' },
+      { id: 'unit-8', ulpin: 'TN-07-6391-8845-2210-F4-U402', floor: 4, unitLabel: 'Flat 402', owner: 'Citizen 7', area: 102.6, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-08-05' },
+      { id: 'unit-9', ulpin: 'TN-07-6391-8845-2210-F2-U203', floor: 2, unitLabel: 'Flat 203', owner: 'Citizen 1', area: 81.1, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-08-27' },
+      { id: 'unit-10', ulpin: 'TN-07-6391-8845-2210-F5-U501', floor: 5, unitLabel: 'Flat 501', owner: 'Citizen 8', area: 118.9, rightsType: 'Owned', status: 'review', lastUpdated: '2026-09-04' },
     ],
   },
   {
@@ -59,8 +59,8 @@ export const buildings = [
     height: 7.4,
     extraction: 'Assumed from footprint',
     units: [
-      { id: 'unit-11', ulpin: 'TN-07-7712-4408-9903-F1-U101', floor: 1, unitLabel: 'Showroom 101', owner: 'Kavitha Selvam', area: 210.0, rightsType: 'Leased', status: 'verified', lastUpdated: '2026-06-15' },
-      { id: 'unit-12', ulpin: 'TN-07-7712-4408-9903-F2-U201', floor: 2, unitLabel: 'Office 201', owner: 'Rahul Menon', area: 168.2, rightsType: 'Leased', status: 'verified', lastUpdated: '2026-06-15' },
+      { id: 'unit-11', ulpin: 'TN-07-7712-4408-9903-F1-U101', floor: 1, unitLabel: 'Showroom 101', owner: 'Citizen 9', area: 210.0, rightsType: 'Leased', status: 'verified', lastUpdated: '2026-06-15' },
+      { id: 'unit-12', ulpin: 'TN-07-7712-4408-9903-F2-U201', floor: 2, unitLabel: 'Office 201', owner: 'Citizen 10', area: 168.2, rightsType: 'Leased', status: 'verified', lastUpdated: '2026-06-15' },
     ],
   },
   {
@@ -73,14 +73,14 @@ export const buildings = [
     height: 6.9,
     extraction: 'Assumed from footprint',
     units: [
-      { id: 'unit-13', ulpin: 'TN-07-8803-9915-4417-F1-U001', floor: 1, unitLabel: 'Ground House', owner: 'Anitha Durai', area: 94.4, rightsType: 'Owned', status: 'review', lastUpdated: '2026-05-30' },
-      { id: 'unit-14', ulpin: 'TN-07-8803-9915-4417-F2-U002', floor: 2, unitLabel: 'Upper House', owner: 'Mohan Pillai', area: 88.8, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-05-30' },
+      { id: 'unit-13', ulpin: 'TN-07-8803-9915-4417-F1-U001', floor: 1, unitLabel: 'Ground House', owner: 'Citizen 11', area: 94.4, rightsType: 'Owned', status: 'review', lastUpdated: '2026-05-30' },
+      { id: 'unit-14', ulpin: 'TN-07-8803-9915-4417-F2-U002', floor: 2, unitLabel: 'Upper House', owner: 'Citizen 12', area: 88.8, rightsType: 'Owned', status: 'verified', lastUpdated: '2026-05-30' },
     ],
   },
 ]
 
 export const currentUser = {
-  name: 'Ramesh Iyer',
+  name: 'Citizen 1',
   citizenId: 'LYD-CIT-88231',
   aadhaarMasked: 'XXXX XXXX 4821',
   mobileMasked: '+91 XXXXX 41209',
@@ -119,7 +119,7 @@ export const getUnit = (id) => {
           ulpin: match.unit_ulpin || `TN-07-${id}`,
           floor: match.floor ?? 2,
           unitLabel: match.owner_name ? `${match.owner_name}'s Unit` : `Unit ${String(id).slice(-4)}`,
-          owner: match.owner_name || 'Ramesh Iyer',
+          owner: match.owner_name || 'Citizen 1',
           area: match.area_sqm || 82.5,
           rightsType: match.rights_type || 'Owned',
           status: match.validation_status === 'conflict' ? 'conflict' : match.validation_status === 'verified' ? 'verified' : 'review',
@@ -138,7 +138,7 @@ export const getUnit = (id) => {
               ulpin: x.unit_ulpin,
               floor: x.floor ?? 1,
               unitLabel: x.owner_name || 'Unit',
-              owner: x.owner_name || 'Owner',
+              owner: x.owner_name || 'Citizen 1',
               area: x.area_sqm || 80,
               rightsType: x.rights_type || 'Owned',
               status: x.validation_status || 'verified',
@@ -155,7 +155,7 @@ export const getUnit = (id) => {
     ulpin: `TN-07-4821-9034-7756-${id.toUpperCase()}`,
     floor: 2,
     unitLabel: `Unit ${id}`,
-    owner: 'Ramesh Iyer',
+    owner: 'Citizen 1',
     area: 84.0,
     rightsType: 'Owned',
     status: 'verified',

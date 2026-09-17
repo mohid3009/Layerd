@@ -3,7 +3,7 @@
 // ReferenceErrors that esbuild cannot see.
 const fs = require('fs')
 const path = require('path')
-const SRC = 'c:/Users/Mohid/Desktop/projects/3dulpin/3d_map/frontend/src'
+const SRC = path.resolve(__dirname, '../3d_map/frontend/src')
 const DIRS = [
   path.join(SRC, 'pages'),
   path.join(SRC, 'components', 'layout'),

@@ -42,12 +42,14 @@ export function basementColor(i, n) {
 // basement hanging BELOW the map plane (negative base/top), each one
 // storey-height deep. Single-storey buildings keep their status colour for
 // the above-ground part, so the measured/assumed legend stays truthful.
-export function floorSlices(features) {
+export function floorSlices(features, floorGap = 0, selectedId = null) {
   const out = []
   for (const f of features) {
     if (!f.geometry) continue
     const p = f.properties
-    const stories = Math.max(1, parseInt(p.stories) || 1)
+    const isSelected = selectedId && p.building_id === selectedId
+    const gap = isSelected ? floorGap : 0
+    const stories = Math.min(10, Math.max(1, parseInt(p.stories) || 1))
     const basements = Math.max(0, parseInt(p.basements) || 0)
     const height = p.height_m || 0
     if (!height || (stories <= 1 && basements <= 0)) {
@@ -55,30 +57,34 @@ export function floorSlices(features) {
       continue
     }
     const slice = height / stories
-    if (stories <= 1) {
+    if (stories <= 1 && gap <= 0) {
       out.push(f)
     } else {
       for (let i = 0; i < stories; i++) {
+        const base = i * (slice + gap)
+        const top = base + slice
         out.push({
           ...f,
           properties: {
             ...p,
             floor: i + 1,
-            base_m: +(i * slice).toFixed(2),
-            height_m: +((i + 1) * slice).toFixed(2),
+            base_m: +base.toFixed(2),
+            height_m: +top.toFixed(2),
             color: floorColor(i, stories),
           },
         })
       }
     }
     for (let k = 1; k <= basements; k++) {
+      const base = -k * (slice + gap)
+      const top = base + slice
       out.push({
         ...f,
         properties: {
           ...p,
           floor: -k, // B1, B2, … below ground
-          base_m: +(-k * slice).toFixed(2),
-          height_m: +(-(k - 1) * slice).toFixed(2),
+          base_m: +base.toFixed(2),
+          height_m: +top.toFixed(2),
           color: basementColor(k - 1, basements),
         },
       })
@@ -92,7 +98,7 @@ export function floorSlices(features) {
 // rendered as their ACTUAL sections: each unit's polygon (normalised 0..1
 // over the footprint bbox by the generator) is mapped back to lng/lat and
 // stacked by floor, so the map shows the real section layout of every storey.
-export function unitSliceFeatures(feature, units) {
+export function unitSliceFeatures(feature, units, floorGap = 0) {
   const ring =
     feature?.geometry?.type === 'Polygon' ? feature.geometry.coordinates[0] : null
   if (!ring || !units.length) return []
@@ -111,20 +117,32 @@ export function unitSliceFeatures(feature, units) {
   const out = []
   for (const u of units) {
     const f = u.floor_index
-    const base = f < 0 ? -f * slice : (f - 1) * slice
-    const top = f < 0 ? -(f - 1) * slice : f * slice
+    const base = f < 0 ? -f * (slice + floorGap) : (f - 1) * (slice + floorGap)
+    const top = base + slice
     const coords = (u.polygon || []).map(([nx, ny]) => [x0 + nx * spanLon, y0 + ny * spanLat])
     if (coords.length < 3) continue
     coords.push(coords[0])
+    
+    // Subunit color variation per subunit index on the floor
+    const subIdx = u.subunit_no || 1
+    const baseHue = f < 0 ? 240 : 216
+    const baseSat = f < 0 ? 8 : 68
+    const baseLum = f < 0 ? Math.max(15, 38 - Math.abs(f) * 10) : Math.min(85, Math.max(25, 28 + (f / stories) * 45))
+    const lumOffset = (subIdx % 3 === 1) ? 4 : (subIdx % 3 === 2) ? -5 : 0
+    const color = hslToHex((baseHue + (subIdx - 1) * 8) % 360, baseSat, Math.min(90, Math.max(20, baseLum + lumOffset)))
+
     out.push({
       type: 'Feature',
       properties: {
         ...p,
         floor: f,
         unit_ulpin: u.unit_ulpin,
+        subunit_id: u.subunit_id || `SU-${subIdx}`,
+        subunit_name: u.subunit_name || u.unit_ulpin,
+        subunit_type: u.subunit_type || 'Unit',
         base_m: +base.toFixed(2),
         height_m: +top.toFixed(2),
-        color: f < 0 ? basementColor(-f - 1, basements) : floorColor(Math.max(0, f - 1), stories),
+        color: color,
       },
       geometry: { type: 'Polygon', coordinates: [coords] },
     })
