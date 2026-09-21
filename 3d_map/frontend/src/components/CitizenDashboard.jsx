@@ -14,6 +14,7 @@ const M_PER_DEG = 111320
 export default function CitizenDashboard({ session, onOpenMap }) {
   const navigate = useNavigate()
   const [props, setProps] = useState([])
+  const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [unitsVersion, setUnitsVersion] = useState(0)
   const [view, setView] = useState('welcome') // welcome | properties | grievances
@@ -33,11 +34,35 @@ export default function CitizenDashboard({ session, onOpenMap }) {
   const [grievanceDesc, setGrievanceDesc] = useState('')
   const [grievanceSubmitted, setGrievanceSubmitted] = useState(null)
 
+  // Any modal open → ESC closes it, background scroll locks, print isolates it
+  const modalOpen = !!(selectedUnitForCert || selectedUnitForLedger || selectedUnitForDispute)
+  const closeModals = () => {
+    setSelectedUnitForCert(null)
+    setSelectedUnitForLedger(null)
+    setSelectedUnitForDispute(null)
+    setGrievanceSubmitted(null)
+  }
+  useEffect(() => {
+    if (!modalOpen) return undefined
+    const onKey = (e) => { if (e.key === 'Escape') closeModals() }
+    window.addEventListener('keydown', onKey)
+    document.body.classList.add('modal-scroll-lock')
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.classList.remove('modal-scroll-lock')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalOpen])
+
   useEffect(() => {
     let alive = true
     citizenProperties()
-      .then((rows) => alive && setProps(rows))
-      .catch(() => {})
+      .then((rows) => {
+        if (!alive) return
+        setProps(rows)
+        setLoading(false)
+      })
+      .catch(() => { if (alive) setLoading(false) })
     const bump = () => setUnitsVersion((v) => v + 1)
     window.addEventListener('demo-units-changed', bump)
     return () => {
@@ -200,6 +225,11 @@ export default function CitizenDashboard({ session, onOpenMap }) {
   }, [portfolio, complaintsVersion])
 
   const surveyedPct = totals.count ? Math.round((totals.surveyed / totals.count) * 100) : 100
+  // Share of units holding a clear, verified title — drives the health stat card
+  const titleHealthPct = totals.units
+    ? Math.round(((totals.units - totals.conflicts) / totals.units) * 100)
+    : 100
+  const needsAttention = totals.conflicts > 0
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
@@ -266,12 +296,25 @@ export default function CitizenDashboard({ session, onOpenMap }) {
     },
   ]
 
+  // Keyboard support for the clickable service cards (Enter / Space activate)
+  const cardProps = (handler) => ({
+    role: 'button',
+    tabIndex: 0,
+    onClick: handler,
+    onKeyDown: (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        handler()
+      }
+    },
+  })
+
   return (
-    <main className="citizen-main-content">
+    <main className={`citizen-main-content${modalOpen ? ' has-modal' : ''}`}>
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed top-16 right-6 z-50 bg-[#1C2530] text-white px-4 py-2.5 rounded-lg shadow-xl text-xs font-semibold flex items-center gap-2 border border-white/20 animate-fade-in">
-          <Check size={14} className="text-green" /> {toast}
+        <div className="cb-toast" role="status" aria-live="polite">
+          <Check size={14} className="cb-toast-check" /> {toast}
         </div>
       )}
 
@@ -281,24 +324,27 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           <button
             className={`view-tab ${view === 'welcome' ? 'active' : ''}`}
             onClick={() => setView('welcome')}
+            aria-pressed={view === 'welcome'}
           >
             <Activity size={14} /> Overview &amp; Services
           </button>
           <button
             className={`view-tab ${view === 'properties' ? 'active' : ''}`}
             onClick={() => setView('properties')}
+            aria-pressed={view === 'properties'}
           >
             <Building2 size={14} /> My Properties ({portfolio.units.length})
           </button>
           <button
             className={`view-tab ${view === 'grievances' ? 'active' : ''}`}
             onClick={() => setView('grievances')}
+            aria-pressed={view === 'grievances'}
           >
             <AlertTriangle size={14} /> Grievances &amp; Disputes
           </button>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="citizen-head-actions flex items-center gap-2.5">
           <button
             className="btn tiny inline-flex items-center gap-1.5"
             onClick={() => {
@@ -318,8 +364,21 @@ export default function CitizenDashboard({ session, onOpenMap }) {
         </div>
       </div>
 
+      {/* Initial loading skeleton — shown until the portfolio resolves */}
+      {loading && (
+        <div aria-busy="true" aria-label="Loading your property portfolio…">
+          <div className="cb-skeleton cb-skeleton-banner" />
+          <div className="stat-cards">
+            <div className="cb-skeleton cb-skeleton-stat" />
+            <div className="cb-skeleton cb-skeleton-stat" />
+            <div className="cb-skeleton cb-skeleton-stat" />
+            <div className="cb-skeleton cb-skeleton-stat" />
+          </div>
+        </div>
+      )}
+
       {/* ── OVERVIEW & SERVICES VIEW ── */}
-      {view === 'welcome' && (
+      {!loading && view === 'welcome' && (
         <>
           {/* Welcome Banner */}
           <div className="citizen-banner">
@@ -335,8 +394,10 @@ export default function CitizenDashboard({ session, onOpenMap }) {
               <div className="cb-title">Welcome, {session?.name || 'Citizen'}</div>
               <div className="cb-sub">
                 Your portfolio holds <b>{totals.count} registered property parcel{totals.count !== 1 ? 's' : ''}</b> in Chennai with{' '}
-                <b>{totals.units} volumetric unit{totals.units !== 1 ? 's' : ''}</b> mapped in 3D.
-                All titles are currently clear and verified against the state revenue register.
+                <b>{totals.units} volumetric unit{totals.units !== 1 ? 's' : ''}</b> mapped in 3D.{' '}
+                {needsAttention
+                  ? `${totals.conflicts} unit${totals.conflicts !== 1 ? 's' : ''} flagged for review — open Grievances & Disputes to track resolution.`
+                  : 'All titles are clear and verified against the state revenue register.'}
               </div>
               <div className="flex items-center gap-3 mt-4 flex-wrap">
                 <button
@@ -389,24 +450,23 @@ export default function CitizenDashboard({ session, onOpenMap }) {
               <b>{totals.area.toLocaleString('en-IN')} m²</b>
               <span className="muted tiny">Total Footprint Area (~{(totals.area * 10.764).toFixed(0)} sq.ft)</span>
             </div>
-            <div className="stat-card">
-              <b className="text-[#34D399]">100%</b>
-              <span className="muted tiny">Title Verification Health</span>
+            <div className="stat-card" title="Share of your volumetric units with a clear, verified title">
+              <b className={needsAttention ? 'stat-warn' : 'stat-ok'}>{titleHealthPct}%</b>
+              <span className="muted tiny">
+                Title Verification Health{needsAttention ? ` — ${totals.conflicts} flagged` : ''}
+              </span>
             </div>
           </div>
 
           {/* Quick Citizen Services Grid */}
-          <div className="mt-2 mb-4">
+          <div>
             <h3 className="text-xs uppercase font-bold text-[#5C6675] tracking-wider mb-2">
               Citizen Self-Service Actions
             </h3>
             <div className="citizen-quick-services">
               <div
                 className="quick-service-card"
-                onClick={() => {
-                  const target = portfolio.units[0]?.u.unit_ulpin || 'unit-2'
-                  navigate(`/passport/${target}`)
-                }}
+                {...cardProps(() => navigate(`/passport/${portfolio.units[0]?.u.unit_ulpin || 'unit-2'}`))}
               >
                 <div>
                   <div className="qs-icon-box bg-blue-50 text-[#4C5BD4]">
@@ -422,10 +482,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
 
               <div
                 className="quick-service-card"
-                onClick={() => {
-                  const target = portfolio.units[0]?.u.unit_ulpin || 'unit-2'
-                  navigate(`/passport/${target}`)
-                }}
+                {...cardProps(() => navigate(`/passport/${portfolio.units[0]?.u.unit_ulpin || 'unit-2'}`))}
               >
                 <div>
                   <div className="qs-icon-box bg-emerald-50 text-[#1B7A4A]">
@@ -441,7 +498,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
 
               <div
                 className="quick-service-card"
-                onClick={() => setView('grievances')}
+                {...cardProps(() => setView('grievances'))}
               >
                 <div>
                   <div className="qs-icon-box bg-amber-50 text-[#8A6410]">
@@ -457,10 +514,9 @@ export default function CitizenDashboard({ session, onOpenMap }) {
 
               <div
                 className="quick-service-card"
-                onClick={() => {
-                  const target = portfolio.units[0]?.u || { unit_ulpin: 'unit-2', unitLabel: 'Flat 201' }
-                  setSelectedUnitForLedger(target)
-                }}
+                {...cardProps(() =>
+                  setSelectedUnitForLedger(portfolio.units[0]?.u || { unit_ulpin: 'unit-2', unitLabel: 'Flat 201' }),
+                )}
               >
                 <div>
                   <div className="qs-icon-box bg-purple-50 text-[#7C3AED]">
@@ -521,7 +577,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           </div>
 
           {/* Citizen FAQs Section */}
-          <div className="panel-section welcome-card mt-4">
+          <div className="panel-section welcome-card">
             <h3 className="flex items-center gap-2">
               <HelpCircle size={15} className="text-[#4C5BD4]" /> Frequently Asked Questions for Property Owners
             </h3>
@@ -531,6 +587,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   <button
                     className="faq-btn"
                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    aria-expanded={openFaq === i}
                   >
                     <span>{faq.q}</span>
                     {openFaq === i ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -544,9 +601,9 @@ export default function CitizenDashboard({ session, onOpenMap }) {
       )}
 
       {/* ── MY PROPERTIES VIEW ── */}
-      {view === 'properties' && (
+      {!loading && view === 'properties' && (
         <>
-          <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="records-search flex-1 min-w-[280px]">
               <Search size={15} className="rs-icon" />
               <input
@@ -577,20 +634,49 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                 In Review ({portfolio.units.filter((x) => x.tone !== 'verified').length})
               </button>
             </div>
+
+            {(query.trim() || statusFilter !== 'all') && (
+              <span className="muted tiny whitespace-nowrap">
+                Showing {filtered.units.length} of {portfolio.units.length} units
+              </span>
+            )}
           </div>
 
           {filtered.units.length === 0 && (
-            <div className="panel-placeholder bg-white p-8 rounded-[12px] border border-line text-center mt-4">
-              <p className="text-sm font-bold text-ink">No properties matched your filter</p>
-              <p className="muted tiny mt-1">Try searching with a different term or reset your filters.</p>
-              <button className="btn tiny mt-3" onClick={() => { setQuery(''); setStatusFilter('all'); }}>
-                Reset Filters
-              </button>
-            </div>
+            portfolio.units.length === 0 ? (
+              <div className="cb-empty">
+                <Building2 size={26} className="cb-empty-icon" />
+                <p className="text-sm font-bold text-ink">No registered properties yet</p>
+                <p className="muted tiny mt-1 max-w-[420px]">
+                  When a property is registered against your Aadhaar-linked account, its 3D
+                  volumetric title record will appear here automatically.
+                </p>
+                <button
+                  className="btn tiny mt-3 inline-flex items-center gap-1.5"
+                  onClick={() => onOpenMap(null)}
+                >
+                  <MapPin size={13} /> Explore the 3D City Map
+                </button>
+              </div>
+            ) : (
+              <div className="cb-empty">
+                <Search size={26} className="cb-empty-icon" />
+                <p className="text-sm font-bold text-ink">No properties matched your search</p>
+                <p className="muted tiny mt-1">
+                  Try a different apartment number, building name or ULPIN key.
+                </p>
+                <button
+                  className="btn tiny mt-3"
+                  onClick={() => { setQuery(''); setStatusFilter('all'); }}
+                >
+                  Reset Search &amp; Filters
+                </button>
+              </div>
+            )
           )}
 
           {filtered.units.length > 0 && (
-            <div className="prop-grid mt-3">
+            <div className="prop-grid">
               {filtered.units.map(({ u, building, status, tone }) => {
                 const unitId = u.unit_ulpin || u.id || 'unit-2'
                 const displayUlpin = u.unit_ulpin || u.ulpin || `TN-07-${building.building_id}`
@@ -606,8 +692,20 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                           <MapPin size={11} className="unit-pin" /> {building.name || 'Building'} · Floor {u.floor ?? 2}
                         </div>
                       </div>
-                      <span className={`chip ${tone === 'verified' ? 'status-valid' : 'under-review'}`}>
-                        {tone === 'verified' ? '✓ Clear Title' : '⋯ Under Review'}
+                      <span
+                        className={`chip ${
+                          tone === 'verified'
+                            ? 'status-valid'
+                            : tone === 'conflict'
+                              ? 'status-conflict'
+                              : 'under-review'
+                        }`}
+                      >
+                        {tone === 'verified'
+                          ? '✓ Clear Title'
+                          : tone === 'conflict'
+                            ? '⚠ Boundary Conflict'
+                            : '⋯ Under Review'}
                       </span>
                     </div>
 
@@ -630,7 +728,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                           <td>National 3D ULPIN</td>
                           <td>
                             <div className="flex items-center justify-between gap-1">
-                              <span className="mono tiny truncate max-w-[150px]" title={displayUlpin}>
+                              <span className="mono tiny truncate max-w-[200px]" title={displayUlpin}>
                                 {displayUlpin}
                               </span>
                               <button
@@ -671,30 +769,30 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                       </button>
 
                       <button
-                        className="btn tiny inline-flex items-center gap-1.5"
+                        className="btn tiny inline-flex items-center gap-1.5 flex-1 justify-center"
                         onClick={() => setSelectedUnitForLedger(u)}
                         title="Inspect blockchain audit chain"
                       >
-                        <Hash size={13} />
+                        <Hash size={13} /> Ledger
                       </button>
 
                       <button
-                        className="btn tiny inline-flex items-center gap-1.5 text-amber border-amber/30"
+                        className="btn tiny prop-report-btn inline-flex items-center gap-1.5 justify-center"
                         onClick={() => {
                           setGrievanceUnitId(unitId)
                           setSelectedUnitForDispute(u)
                         }}
                         title="Report boundary or area discrepancy"
                       >
-                        <AlertTriangle size={13} />
+                        <AlertTriangle size={13} /> Report
                       </button>
 
                       <button
-                        className="btn tiny inline-flex items-center gap-1.5"
+                        className="btn tiny inline-flex items-center gap-1.5 flex-1 justify-center"
                         onClick={() => onOpenMap(building.building_id || building.id)}
                         title="Show on 3D Map"
                       >
-                        <MapPin size={13} />
+                        <MapPin size={13} /> Map
                       </button>
                     </div>
                   </div>
@@ -706,7 +804,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
       )}
 
       {/* ── GRIEVANCES & DISPUTES VIEW ── */}
-      {view === 'grievances' && (
+      {!loading && view === 'grievances' && (
         <div className="space-y-6">
           <div className="bg-white border border-[#E4E7EC] rounded-[14px] p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
@@ -718,7 +816,10 @@ export default function CitizenDashboard({ session, onOpenMap }) {
               </div>
               <button
                 className="btn primary tiny inline-flex items-center gap-1.5"
-                onClick={() => setSelectedUnitForDispute(portfolio.units[0]?.u || { unit_ulpin: 'unit-2' })}
+                onClick={() => {
+                  setGrievanceUnitId('')
+                  setSelectedUnitForDispute(portfolio.units[0]?.u || { unit_ulpin: 'unit-2' })
+                }}
               >
                 <PlusCircle size={14} /> File New Grievance
               </button>
@@ -730,7 +831,23 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                 Tracked Tickets ({citizenComplaints.length})
               </h3>
               {citizenComplaints.length === 0 ? (
-                <p className="text-sm text-ink-mid">No open complaints or disputes filed for your properties.</p>
+                <div className="cb-empty cb-empty-sm">
+                  <CheckCircle2 size={26} className="cb-empty-icon" />
+                  <p className="text-sm font-bold text-ink">No grievances on record</p>
+                  <p className="muted tiny mt-1">
+                    No complaints or disputes have been filed for your properties. Flag an
+                    issue and track its resolution from here.
+                  </p>
+                  <button
+                    className="btn tiny mt-3 inline-flex items-center gap-1.5"
+                    onClick={() => {
+                      setGrievanceUnitId('')
+                      setSelectedUnitForDispute(portfolio.units[0]?.u || { unit_ulpin: 'unit-2' })
+                    }}
+                  >
+                    <PlusCircle size={13} /> File a Grievance
+                  </button>
+                </div>
               ) : (
                 citizenComplaints.map((c) => {
                   const target = getUnit(c.unitId)
@@ -754,7 +871,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end gap-2 shrink-0">
+                      <div className="ticket-status flex flex-col items-end gap-2 shrink-0">
                         <span
                           className={`chip ${
                             c.status === 'resolved' ? 'status-valid' : 'under-review'
@@ -777,8 +894,14 @@ export default function CitizenDashboard({ session, onOpenMap }) {
 
       {/* ── MODAL: OFFICIAL CERTIFICATE OF OWNERSHIP ── */}
       {selectedUnitForCert && (
-        <div className="citizen-modal-backdrop" onClick={() => setSelectedUnitForCert(null)}>
-          <div className="citizen-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="citizen-modal-backdrop" onClick={closeModals}>
+          <div
+            className="citizen-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Official Certificate of Ownership and 3D Title"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <div className="flex items-center gap-2">
                 <CubeMark size={22} tint="#4C5BD4" />
@@ -874,8 +997,14 @@ export default function CitizenDashboard({ session, onOpenMap }) {
 
       {/* ── MODAL: BLOCKCHAIN AUDIT TRAIL ── */}
       {selectedUnitForLedger && (
-        <div className="citizen-modal-backdrop" onClick={() => setSelectedUnitForLedger(null)}>
-          <div className="citizen-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="citizen-modal-backdrop" onClick={closeModals}>
+          <div
+            className="citizen-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Cryptographic title audit trail"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <div className="flex items-center gap-2">
                 <Hash size={18} className="text-[#4C5BD4]" />
@@ -957,8 +1086,14 @@ export default function CitizenDashboard({ session, onOpenMap }) {
 
       {/* ── MODAL: FILE GRIEVANCE / DISPUTE ── */}
       {selectedUnitForDispute && (
-        <div className="citizen-modal-backdrop" onClick={() => setSelectedUnitForDispute(null)}>
-          <div className="citizen-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="citizen-modal-backdrop" onClick={closeModals}>
+          <div
+            className="citizen-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="File a property discrepancy or grievance"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <div className="flex items-center gap-2">
                 <AlertTriangle size={18} className="text-amber" />

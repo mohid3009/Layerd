@@ -30,8 +30,12 @@ function bboxOfFeature(feature) {
 
 // ── component ─────────────────────────────────────────────────────────────────
 
-export default function Dashboard({ session, onLogout, onSwitchRole }) {
-  if (!session) return <Navigate to="/" replace />
+export default function Dashboard(props) {
+  if (!props.session) return <Navigate to="/" replace />
+  return <DashboardContent {...props} />
+}
+
+function DashboardContent({ session, onLogout, onSwitchRole }) {
 
   const [state, setState]               = useState('loading') // loading | ready | empty | unavailable
   const [features, setFeatures]         = useState([])
@@ -51,10 +55,10 @@ export default function Dashboard({ session, onLogout, onSwitchRole }) {
   const toastTimerRef = useRef(null)
 
   // first-run orientation: dismissible, remembered for the browser session
-  const [guideOpen, setGuideOpen] = useState(() => !sessionStorage.getItem('layerd-guide-seen'))
+  const [guideOpen, setGuideOpen] = useState(() => !sessionStorage.getItem('avani-guide-seen'))
   const dismissGuide = () => {
     setGuideOpen(false)
-    sessionStorage.setItem('layerd-guide-seen', '1')
+    sessionStorage.setItem('avani-guide-seen', '1')
   }
 
   // ── data loading ─────────────────────────────────────────────────────────
@@ -199,7 +203,7 @@ export default function Dashboard({ session, onLogout, onSwitchRole }) {
   const isRegistrar     = session?.role === 'registrar'
   const isSurveyor      = session?.role === 'surveyor'
   const isCitizen       = session?.role === 'citizen'
-  const canEditBuildings = true
+  const canEditBuildings = isSurveyor || isRegistrar
   const navigate        = useNavigate()
 
   const [citizenMapView, setCitizenMapView] = useState(false)
@@ -1104,7 +1108,7 @@ export default function Dashboard({ session, onLogout, onSwitchRole }) {
                   <p className="muted tiny">nothing saved yet</p>
                 )}
                 <p className="muted tiny" style={{ marginTop: 10 }}>
-                  data lives in PostgreSQL/PostGIS (<span className="mono">layerd.lidar_buildings</span>) — click any building on the map for details.
+                  data lives in PostgreSQL/PostGIS (<span className="mono">avani.lidar_buildings</span>) — click any building on the map for details.
                 </p>
               </div>
             </>

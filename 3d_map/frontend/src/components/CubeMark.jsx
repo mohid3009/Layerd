@@ -1,4 +1,4 @@
-// The Layerd mark — an isometric cube, same geometry as the landing page
+// The Avani mark — an isometric cube, same geometry as the landing page
 // hero. `tint` re-colors all three faces (top full, left 55%, right 28%)
 // so the mark works on both the dark landing and the espresso navbar.
 export default function CubeMark({ size = 16, tint = '#E8E8E8' }) {

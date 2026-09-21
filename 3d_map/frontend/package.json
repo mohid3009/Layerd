@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test ../../scripts/vertical_geometry.test.mjs",
+    "check": "node ../../scripts/check_jsx.cjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.0",

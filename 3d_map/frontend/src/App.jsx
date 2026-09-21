@@ -3,7 +3,8 @@ import { Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-rou
 import { DEMO_USERS, SESSION_KEY } from './constants.js'
 import Landing from './components/Landing.jsx'
 import Login from './components/Login.jsx'
-import Dashboard from './components/Dashboard.jsx'
+const Dashboard = lazy(() => import('./components/Dashboard.jsx'))
+const Building3DView = lazy(() => import('./pages/Building3DView.jsx'))
 import Topbar from './components/layout/Topbar.jsx'
 import PropertyPassport from './pages/PropertyPassport.jsx'
 import ComplaintForm from './pages/ComplaintForm.jsx'
@@ -78,6 +79,7 @@ export default function App() {
   }
 
   return (
+    <Suspense fallback={<PageFallback />}>
     <Routes>
       {/* Landing / login */}
       <Route path="/"        element={<Home setSession={updateSession} />} />
@@ -92,6 +94,7 @@ export default function App() {
       <Route path="/passport/:id"        element={<PageShell session={session} {...sharedProps} maxW="1100px"><PropertyPassport /></PageShell>} />
       <Route path="/portal/passport/:id" element={<PageShell session={session} {...sharedProps} maxW="1100px"><PropertyPassport /></PageShell>} />
 
+      <Route path="/portal/building/:id/3d" element={<PageShell session={session} {...sharedProps}><Building3DView /></PageShell>} />
       {/* Portal pages */}
       <Route path="/portal/records"      element={<PageShell session={session} {...sharedProps} maxW="1100px"><PropertyRecords /></PageShell>} />
       <Route path="/portal/upc/:id"      element={<PageShell session={session} {...sharedProps} maxW="800px"><UnifiedPropertyCard /></PageShell>} />
@@ -116,6 +119,7 @@ export default function App() {
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    </Suspense>
   )
 }
 

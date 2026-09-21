@@ -1173,7 +1173,7 @@ input[type='file']::file-selector-button:hover { border-color: rgba(232, 232, 23
   }
 }
 
-/* ================= landing â€” Layerd pitch (monochrome) ================= */
+/* ================= landing â€” Avani pitch (monochrome) ================= */
 .land {
   height: 100vh;
   overflow-y: auto;
@@ -4246,6 +4246,861 @@ td.diff-after {
 }
 
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   CITIZEN PORTAL — MISSING COMPONENT STYLES
+   ─────────────────────────────────────────────────────────────────────────── */
 
+/* ── View Tab Navigation (Overview / My Properties / Grievances) ───────── */
+.view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #F2F4F7;
+  border: 1px solid #E4E7EC;
+  border-radius: 10px;
+  padding: 4px;
+  flex-wrap: wrap;
+}
+.view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #5C6675;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.view-tab:hover {
+  background: #E9EDF3;
+  color: #1C2530;
+}
+.view-tab.active {
+  background: #FFFFFF;
+  color: #4C5BD4;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.10), 0 1px 2px rgba(16, 24, 40, 0.06);
+}
 
+/* ── Citizen Welcome Banner ─────────────────────────────────────────────── */
+.citizen-banner {
+  position: relative;
+  background: linear-gradient(135deg, #1E2C7A 0%, #2D3C9F 40%, #3A4DC4 100%);
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 28px 32px;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 4px 24px rgba(76, 91, 212, 0.25);
+}
+.cb-circle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.18;
+}
+.cb-circle.c1 {
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, #818CF8, transparent 70%);
+  top: -80px;
+  right: 120px;
+}
+.cb-circle.c2 {
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, #A5B4FC, transparent 70%);
+  bottom: -60px;
+  left: 40px;
+}
+.cb-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+}
+.cb-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+  margin-bottom: 6px;
+}
+.cb-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+.cb-sub {
+  font-size: 13.5px;
+  color: rgba(255,255,255,0.82);
+  line-height: 1.55;
+  max-width: 560px;
+}
+.cb-cta {
+  margin-top: 0 !important;
+  font-size: 13px !important;
+  padding: 9px 18px !important;
+}
+.citizen-banner .btn {
+  background: rgba(255,255,255,0.18);
+  color: #FFFFFF;
+  border-color: rgba(255,255,255,0.3);
+}
+.citizen-banner .btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.28);
+  box-shadow: none;
+  transform: none;
+}
+.citizen-banner .btn.primary {
+  background: #FFFFFF;
+  color: #1E2C7A;
+  border-color: transparent;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+.citizen-banner .btn.primary:hover:not(:disabled) {
+  background: #F0F4FF;
+  filter: none;
+}
+.cb-art {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+@media (max-width: 640px) {
+  .cb-art { display: none; }
+  .citizen-banner { padding: 22px 20px; }
+  .cb-title { font-size: 20px; }
+}
+
+/* ── Quick Citizen Services Grid ────────────────────────────────────────── */
+.citizen-quick-services {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.quick-service-card {
+  background: #FFFFFF;
+  border: 1px solid #E4E7EC;
+  border-radius: 14px;
+  padding: 18px 18px 14px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 140px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04);
+}
+.quick-service-card:hover {
+  border-color: #4C5BD4;
+  box-shadow: 0 4px 18px rgba(76, 91, 212, 0.14);
+  transform: translateY(-2px);
+}
+.qs-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+.qs-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1C2530;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+.qs-desc {
+  font-size: 12px;
+  color: #5C6675;
+  line-height: 1.5;
+}
+.qs-action {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4C5BD4;
+  margin-top: 4px;
+}
+
+/* ── Filter Pills (My Properties filter bar) ────────────────────────────── */
+.filter-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #FFFFFF;
+  border: 1px solid #E4E7EC;
+  color: #5C6675;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.filter-pill:hover {
+  border-color: #4C5BD4;
+  color: #4C5BD4;
+}
+.filter-pill.active {
+  background: #4C5BD4;
+  border-color: #4C5BD4;
+  color: #FFFFFF;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(76, 91, 212, 0.28);
+}
+
+/* ── Prop Card (light theme override) ──────────────────────────────────── */
+.citizen-dash .prop-card,
+.citizen-main-content .prop-card {
+  background: #FFFFFF;
+  border-color: #E4E7EC;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
+}
+.citizen-dash .prop-card:hover,
+.citizen-main-content .prop-card:hover {
+  border-color: #4C5BD4;
+  box-shadow: 0 4px 16px rgba(76, 91, 212, 0.10);
+}
+.citizen-dash .prop-head strong,
+.citizen-main-content .prop-head strong {
+  color: #1C2530;
+}
+.citizen-dash .prop-card .kv td,
+.citizen-main-content .prop-card .kv td {
+  border-color: #F0F2F5;
+}
+.citizen-dash .prop-card .kv td:first-child,
+.citizen-main-content .prop-card .kv td:first-child {
+  color: #5C6675;
+}
+
+/* ── Prop card action row ────────────────────────────────────────────────── */
+.prop-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.prop-card-actions .btn.tiny {
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+  font-size: 11.5px;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+
+/* ── Records Search Bar ──────────────────────────────────────────────────── */
+.records-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.records-search .rs-icon {
+  position: absolute;
+  left: 11px;
+  color: #98A2B3;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+.records-search .search {
+  padding-left: 36px;
+  width: 100%;
+  max-width: none;
+}
+
+/* ── Welcome Grid (survey ring + activity) ───────────────────────────────── */
+.welcome-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+@media (max-width: 768px) {
+  .welcome-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.welcome-card {
+  background: #FFFFFF !important;
+  border-color: #E4E7EC !important;
+}
+.welcome-card h3 {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #1C2530 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+.welcome-card h3::before {
+  display: none !important;
+}
+
+/* ── Ring Row (survey status card) ──────────────────────────────────────── */
+.ring-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.ring-svg { flex-shrink: 0; }
+.ring-note {
+  flex: 1;
+  min-width: 120px;
+  font-size: 12.5px;
+  color: #5C6675;
+  line-height: 1.6;
+}
+
+/* ── Activity Feed Row ────────────────────────────────────────────────────── */
+.act-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px dashed #F0F2F5;
+}
+.act-row.last {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.act-ic {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ic-green { color: #1B7A4A; }
+.ic-amber { color: #B7791F; }
+.ic-blue  { color: #2B6CB0; }
+.act-body { flex: 1; min-width: 0; }
+.act-text {
+  font-size: 12.5px;
+  color: #1C2530;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* ── FAQ Accordion ─────────────────────────────────────────────────────────── */
+.faq-list { display: flex; flex-direction: column; gap: 8px; }
+.faq-item {
+  border: 1px solid #E4E7EC;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #FAFBFC;
+}
+.faq-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1C2530;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 12px;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+.faq-btn:hover { background: #F2F4F7; }
+.faq-ans {
+  padding: 4px 16px 14px;
+  font-size: 12.5px;
+  color: #5C6675;
+  line-height: 1.65;
+}
+
+/* ── Citizen Modal (Certificate / Ledger / Dispute) ─────────────────────── */
+.citizen-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.18s ease;
+}
+.citizen-modal {
+  background: #FFFFFF;
+  border: 1px solid #E4E7EC;
+  border-radius: 16px;
+  width: min(680px, 100%);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
+  animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #E4E7EC;
+}
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px;
+}
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid #E4E7EC;
+}
+
+/* Certificate frame inside modal */
+.cert-frame {
+  border: 2px solid #E4E7EC;
+  border-radius: 12px;
+  padding: 20px;
+  background: #FAFBFC;
+}
+.cert-stamp {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #991B1B;
+  border: 1.5px solid #991B1B;
+  border-radius: 4px;
+  padding: 3px 8px;
+  text-transform: uppercase;
+  opacity: 0.85;
+  transform: rotate(-8deg);
+  display: inline-block;
+}
+
+/* ── stat-card — allow value to wrap cleanly ─────────────────────────────── */
+.stat-card b {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+.stat-card .muted.tiny {
+  font-size: 11.5px;
+  line-height: 1.45;
+  white-space: normal;
+}
+
+/* ── kv table — prevent last-child cell overflow ────────────────────────── */
+.kv td:last-child {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 0; /* forces table-layout to distribute properly */
+}
+.kv {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* ── Topbar nav responsiveness ───────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .role-label-text { display: none; }
+}
+@media (max-width: 980px) {
+  .mode-switch {
+    display: none;
+  }
+}
+@media (max-width: 860px) {
+  .role-switcher-wrap {
+    display: none;
+  }
+}
+@media (max-width: 680px) {
+  .brand-tag { display: none; }
+  .session-meta .session-name { display: none; }
+}
+
+/* ── btn.tiny sizing ─────────────────────────────────────────────────────── */
+.btn.tiny {
+  font-size: 11.5px;
+  padding: 5px 10px;
+  border-radius: 7px;
+}
+
+/* ── Login role blurb — prevent vertical overflow on narrow screens ──────── */
+.login-role em.tiny {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+.login-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition: color 0.15s ease;
+  align-self: flex-start;
+}
+.login-back:hover { color: var(--text); }
+.login-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.login-mark {
+  flex-shrink: 0;
+}
+
+/* ── Property Passport — schedule headers don't overflow on mobile ────────── */
+@media (max-width: 600px) {
+  .govt-schedule-banner {
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    font-size: 10px;
+  }
+  .govt-schedule-banner span:last-child {
+    align-self: flex-end;
+  }
+}
+
+/* ── unit-where (building + floor line in prop card) ────────────────────── */
+.unit-where {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+.unit-pin {
+  flex-shrink: 0;
+  color: #98A2B3;
+}
+
+/* ── Passport ULPIN show-full toggle ────────────────────────────────────── */
+.font-id, .passport-ulpin {
+  font-family: 'Roboto Mono', 'JetBrains Mono', ui-monospace, monospace;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+/* ── Complaint form — keep inside max-width ─────────────────────────────── */
+@media (max-width: 600px) {
+  .govt-deed-paper {
+    padding: 20px 16px;
+  }
+  .govt-deed-paper .grid-cols-2,
+  .govt-deed-paper .grid-cols-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CITIZEN DASHBOARD — UX & LAYOUT POLISH (final overrides)
+   Everything below wins the cascade for the citizen portal surfaces.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Toast: clears the 72px topbar, animates in, full-width on phones ────── */
+.cb-toast {
+  position: fixed;
+  top: 86px;
+  right: 24px;
+  z-index: 2100;
+  background: #1C2530;
+  color: #FFFFFF;
+  padding: 10px 16px;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 32px));
+  animation: cb-toast-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cb-toast-check { color: #34D399; flex-shrink: 0; }
+@keyframes cb-toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 640px) {
+  .cb-toast { left: 16px; right: 16px; top: auto; bottom: 20px; }
+}
+
+/* body scroll lock while any citizen modal is open */
+body.modal-scroll-lock { overflow: hidden; }
+
+/* ── property card action row: tidy grid instead of ragged flex wrap ─────── */
+.prop-card-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #E4E7EC;
+}
+.prop-card-actions .btn.tiny {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+  white-space: nowrap;
+}
+.prop-report-btn { color: #B7791F !important; border-color: rgba(183, 121, 31, 0.35) !important; }
+.prop-report-btn:hover:not(:disabled) {
+  background: #FDF4E3 !important;
+  border-color: rgba(183, 121, 31, 0.55) !important;
+  color: #8A6410 !important;
+}
+
+/* status chips never break mid-word; head wraps instead of squeezing */
+.citizen-dash .prop-card .chip { white-space: nowrap; flex-shrink: 0; }
+.prop-head { flex-wrap: wrap; row-gap: 6px; }
+
+/* ── very narrow phones: single column, no horizontal overflow ──────────── */
+@media (max-width: 420px) {
+  .prop-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .citizen-main-content { padding: 16px 16px 48px; gap: 18px; }
+  .cb-title { font-size: 22px; }
+  .stat-card { padding: 14px 16px; }
+  .stat-card b { font-size: 20px; }
+}
+
+/* banner art only where it has room (prevents text overlap mid-width) */
+@media (max-width: 900px) {
+  .cb-art { display: none; }
+}
+
+/* ── view tabs: horizontal scroll on tiny screens instead of ragged wrap ── */
+@media (max-width: 640px) {
+  .citizen-head .view-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    scrollbar-width: none;
+  }
+  .citizen-head .view-tabs::-webkit-scrollbar { display: none; }
+}
+
+/* ── loading skeleton ────────────────────────────────────────────────────── */
+.cb-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #E9EDF3;
+  border-radius: 12px;
+}
+.cb-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: cb-shimmer 1.4s infinite;
+}
+@keyframes cb-shimmer { to { transform: translateX(100%); } }
+.cb-skeleton-banner { min-height: 190px; border-radius: 16px; }
+.cb-skeleton-stat { min-height: 92px; border-radius: 14px; }
+
+/* ── friendly empty states ──────────────────────────────────────────────── */
+.cb-empty {
+  background: #FFFFFF;
+  border: 1px dashed #CDD4DF;
+  border-radius: 14px;
+  padding: 44px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.cb-empty-sm { padding: 30px 20px; margin-top: 10px; }
+.cb-empty-icon {
+  color: #98A2B3;
+  background: #F2F4F7;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.cb-empty .btn { margin-top: 12px; }
+
+/* ── verification health stat colour variants ───────────────────────────── */
+.stat-card b.stat-ok { color: #1B7A4A; }
+.stat-card b.stat-warn { color: #B7791F; }
+
+/* ── keyboard focus ring for clickable service cards ─────────────────────── */
+.quick-service-card:focus-visible {
+  outline: 2px solid #4C5BD4;
+  outline-offset: 2px;
+  border-color: #4C5BD4;
+}
+
+/* ── reduced motion: kill shimmer/entrance animations ────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cb-skeleton::after { animation: none; }
+  .cb-toast { animation: none; }
+}
+
+/* ── print: with a modal open, print ONLY the certificate ────────────────── */
+@media print {
+  .citizen-main-content.has-modal > *:not(.citizen-modal-backdrop) { display: none !important; }
+  .citizen-main-content.has-modal .citizen-modal-backdrop {
+    position: static;
+    display: block;
+    background: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0;
+    animation: none !important;
+  }
+  .citizen-main-content.has-modal .citizen-modal {
+    max-height: none;
+    width: 100%;
+    max-width: 100%;
+    border: none;
+    box-shadow: none;
+    animation: none !important;
+  }
+  .citizen-main-content.has-modal .modal-header,
+  .citizen-main-content.has-modal .modal-footer { display: none !important; }
+  .citizen-main-content.has-modal .modal-body { overflow: visible; padding: 0; }
+  .citizen-main-content.has-modal .cert-frame {
+    background: #FFFFFF !important;
+    border: 2px solid #000 !important;
+    box-shadow: none !important;
+  }
+  .topbar, .mode-switch, .role-switcher-wrap, .session-box { display: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CITIZEN DASHBOARD — MOBILE / SMALL-SCREEN FIXES
+   Topbar wraps freely instead of clipping; dashboard sections collapse
+   into compact phone-first layouts.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Topbar: height follows wrapped rows instead of clipping at 72px ────── */
+@media (max-width: 760px) {
+  .topbar {
+    height: auto;
+    min-height: 0;
+    padding: 10px 14px;
+    align-content: center;
+  }
+}
+
+/* citizen quick-search sizing (moved out of inline styles so it can shrink) */
+.citizen-top-search { margin: 0 8px; }
+.citizen-top-search .search { width: 210px; height: 32px; font-size: 12px; }
+@media (max-width: 560px) {
+  .citizen-top-search {
+    order: 9;               /* own full-width row under the brand row */
+    flex: 1 1 100%;
+    margin: 4px 0 0;
+  }
+  .citizen-top-search .search { width: 100%; }
+}
+
+/* icon-only logout on tiny phones */
+@media (max-width: 480px) {
+  .btn-logout span { display: none; }
+  .btn-logout { padding: 6px 9px; }
+}
+
+/* ── dashboard header: action buttons become a full-width row ────────────── */
+@media (max-width: 640px) {
+  .citizen-head-actions { width: 100%; }
+  .citizen-head-actions .btn { flex: 1; justify-content: center; }
+}
+
+/* ── stat cards: 2×2 grid on phones instead of a tall 4-row stack ────────── */
+@media (max-width: 640px) {
+  .stat-cards { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── quick services: compact 2×2 action grid on phones ──────────────────── */
+@media (max-width: 640px) {
+  .citizen-quick-services { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .quick-service-card { padding: 14px; gap: 8px; }
+  .qs-icon-box { width: 34px; height: 34px; font-size: 16px; margin-bottom: 4px; }
+  .qs-icon-box svg { width: 17px; height: 17px; }
+  .qs-title { font-size: 12.5px; }
+  .qs-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11px;
+  }
+  .qs-action { font-size: 11px; }
+}
+
+/* ── welcome banner: phone type scale + full-width CTA buttons ────────────── */
+@media (max-width: 640px) {
+  .cb-title { font-size: 20px; }
+  .citizen-banner { padding: 22px 20px; }
+}
+@media (max-width: 520px) {
+  .citizen-banner .cb-cta { width: 100%; justify-content: center; }
+}
+
+/* ── grievance tickets: status + SLA span the full width under the text ─── */
+@media (max-width: 560px) {
+  .ticket-status {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+/* ── cards & tables: compact rhythm on small phones ──────────────────────── */
+@media (max-width: 480px) {
+  .welcome-card { padding: 14px; }
+  .cb-empty { padding: 32px 18px; }
+  .prop-card { padding: 12px; }
+  .prop-card .kv td { padding: 6px 4px; }
+  .stat-card { padding: 12px 14px; }
+  .stat-card b { font-size: 18px; }
+  .filter-pills { gap: 5px; }
+  .filter-pill { padding: 5px 10px; font-size: 11px; }
+}
+
+/* ── modals: tighter chrome on phones so content keeps room to breathe ──── */
+@media (max-width: 520px) {
+  .citizen-modal-backdrop { padding: 10px; }
+  .citizen-modal { border-radius: 14px; }
+  .modal-header { padding: 14px 14px 12px; }
+  .modal-body { padding: 14px; }
+  .modal-footer { padding: 12px 14px 14px; }
+  .citizen-modal .cert-frame { padding: 14px; }
+  .citizen-modal .cert-frame .flex.items-center.justify-between.flex-wrap { gap: 8px; }
+}
 

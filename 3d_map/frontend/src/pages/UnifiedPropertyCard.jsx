@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Building2, ChevronRight, Box, Info } from 'lucide-react'
+import { Building2, ChevronRight, Box, Info, ShieldCheck } from 'lucide-react'
 import Breadcrumb from '../components/ui/Breadcrumb.jsx'
 import TicketCard from '../components/ui/TicketCard.jsx'
 import DetailGrid from '../components/ui/DetailGrid.jsx'

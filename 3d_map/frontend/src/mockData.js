@@ -110,7 +110,7 @@ export const getUnit = (id) => {
     if (u) return { ...u, building: b }
   }
   try {
-    const unitsRaw = JSON.parse(localStorage.getItem('layerd-demo-units') || '{}')
+    const unitsRaw = JSON.parse(localStorage.getItem('avani-demo-units') || '{}')
     for (const [bid, list] of Object.entries(unitsRaw)) {
       const match = list.find((u) => u.unit_ulpin === id || u.id === id || `${bid}-${u.unit_ulpin}` === id)
       if (match) {
@@ -149,19 +149,8 @@ export const getUnit = (id) => {
     }
   } catch (e) {}
 
-  // Fallback for demo: if ID starts with unit- or any ID, create a plausible verified unit
-  return {
-    id: id,
-    ulpin: `TN-07-4821-9034-7756-${id.toUpperCase()}`,
-    floor: 2,
-    unitLabel: `Unit ${id}`,
-    owner: 'Citizen 1',
-    area: 84.0,
-    rightsType: 'Owned',
-    status: 'verified',
-    lastUpdated: '2026-09-02',
-    building: buildings[0],
-  }
+  // Missing records must stay missing; never fabricate a verified title.
+  return null
 }
 export const buildingOfUnit = (unitId) => getUnit(unitId)?.building || null
 export const ownedUnits = () =>

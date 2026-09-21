@@ -205,7 +205,7 @@ export default function PropertyPassport() {
 
             <div className="text-right">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#166534] text-white text-xs font-bold rounded shadow-xs uppercase tracking-wider">
-                <CheckCircle2 size={13} /> VERIFIED &amp; REGISTERED
+                <CheckCircle2 size={13} /> DEMO RECORD — {unit.status.toUpperCase()}
               </span>
               <span className="text-[10px] text-[#786134] block mt-1 font-mono">
                 DIGIPIN Grid: <strong className="text-[#1E293B]">3M-889-J21-K0</strong>

@@ -5,7 +5,7 @@ import { OrbitControls } from '@react-three/drei'
 // Stack of extruded floor slabs driven by the mock building data with an
 // interactive explosion height slider to adjust slice gaps.
 export default function Building3DScene({ floors = 3, basements = 1, unitFloor = 3, size = 2 }) {
-  const [spin, setSpin] = useState(true)
+  const [spin, setSpin] = useState(false)
   const [userGap, setUserGap] = useState(0.18) // interactive height gap between floor slices (m)
   const slab = { w: size, d: size * 0.8, h: 0.35 }
   const gap = userGap
@@ -40,10 +40,8 @@ export default function Building3DScene({ floors = 3, basements = 1, unitFloor =
           </mesh>
         ))}
         <OrbitControls
-          autoRotate={spin}
-          autoRotateSpeed={1.2}
+          autoRotate={false}
           enablePan={false}
-          onStart={() => setSpin(false)}
         />
       </Canvas>
       <div style={{

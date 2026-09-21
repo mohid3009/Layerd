@@ -130,7 +130,7 @@ function Nav({ openLogin }) {
       transition={{ type: 'spring', stiffness: 230, damping: 22, delay: 0.1 }}
     >
       <span className="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight text-white">
-        <CubeMark /> Layerd
+        <CubeMark /> Avani
       </span>
       <div className="hidden md:flex items-center gap-9 text-[12px] text-[#86868B]">
         {NAV_LINKS.map(([label, href]) => (
@@ -182,7 +182,7 @@ function Hero({ openLogin }) {
           className="mt-7 max-w-[640px] text-[#A1A1A6] text-[17px] md:text-[19px] leading-[1.65]"
           {...heroPop(0.2, 0.9)}
         >
-          Layerd is a 3D cadastral system that generates unique spatial IDs for surface land
+          Avani is a 3D cadastral system that generates unique spatial IDs for surface land
           parcels, multi-storey apartment units, and the infrastructure beneath them.
         </motion.p>
         <motion.div className="mt-11 flex gap-4 flex-wrap justify-center" {...heroPop(0.26, 0.85)}>
@@ -372,7 +372,7 @@ function FooterCta({ openLogin }) {
       </div>
       <div className="silver-line" />
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 pt-6 text-[11px] text-[#86868B]">
-        <span>Team Layerd</span>
+        <span>Team Avani</span>
         <span className="font-mono">SIH26095 · 3D ULPIN</span>
         <a href="https://github.com/" className="hover:text-white transition-colors duration-300">GitHub</a>
       </div>

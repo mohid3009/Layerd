@@ -70,11 +70,11 @@ export default function Login({ onLogin, onBack, initialRole = 'citizen' }) {
           </button>
         )}
         <div className="login-head">
-          <div className="brand-mark login-mark" aria-label="Layerd logo">
+          <div className="brand-mark login-mark" aria-label="Avani logo">
             <CubeMark size={30} tint="#8B93E8" />
           </div>
           <div>
-            <h1>Layerd</h1>
+            <h1>Avani</h1>
             <p className="muted tiny">Government of India · National Urban Cadastre · Demo</p>
           </div>
         </div>

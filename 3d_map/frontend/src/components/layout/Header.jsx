@@ -11,7 +11,7 @@ export default function Header() {
       <Link to="/portal" className="flex items-center gap-3 min-w-0">
         <div className="w-9 h-9 rounded-lg bg-white/10 grid place-items-center font-extrabold text-sm">L</div>
         <div className="leading-tight">
-          <div className="font-bold text-[15px]">Layerd Portal</div>
+          <div className="font-bold text-[15px]">Avani Portal</div>
           <div className="text-[11px] text-white/60">National 3D Property Records</div>
         </div>
       </Link>

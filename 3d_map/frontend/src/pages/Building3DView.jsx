@@ -73,9 +73,8 @@ export default function Building3DView() {
           <div className="bg-surface border border-line rounded-[14px] p-4">
             <h3 className="text-sm font-bold text-ink mb-1">About this model</h3>
             <p className="text-xs text-ink-mid leading-relaxed">
-              This same 3D model powers the surveyor and registrar validation tools —
-              every floor you see here is the authoritative volume record used for
-              ULPIN minting, conflict checks and ownership approval.
+              This is a schematic demonstration, not a surveyed or authoritative
+              volume record. Use the ULPIN view to inspect generated unit geometry.
             </p>
           </div>
         </div>

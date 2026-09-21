@@ -353,7 +353,7 @@ export default function BuildingsMap({
     const map = mapRef.current
     if (!map || !loadedRef.current) return
     const bb = bboxOf(features)
-    if (bb) map.fitBounds(bb, { padding: 60, duration: 1200, maxZoom: 17 })
+    if (bb) map.fitBounds(bb, { padding: 60, duration: 1200, maxZoom: 17, bearing: map.getBearing(), pitch: map.getPitch() })
   }, [features])
 
   // selection highlight + zoom-to-building: the WHOLE selected building is
@@ -463,63 +463,19 @@ export default function BuildingsMap({
     if (x0 === Infinity) return
     map.fitBounds(
       [[x0, y0], [x1, y1]],
-      { padding: 120, maxZoom: 18.5, duration: 900, essential: true },
+      {
+        padding: 120,
+        maxZoom: 18.5,
+        duration: 900,
+        essential: true,
+        bearing: map.getBearing(),
+        pitch: map.getPitch(),
+      },
     )
   }, [selectedId, ownedKey])
 
-  // Smooth base rotation animation around selected building
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map || !selectedId) return
 
-    let animId = null
-    let lastTime = performance.now()
-    let userInteracting = false
 
-    const onUserStart = () => { userInteracting = true }
-    const onUserEnd = () => {
-      setTimeout(() => { userInteracting = false }, 1200)
-    }
-
-    map.on('dragstart', onUserStart)
-    map.on('rotatestart', onUserStart)
-    map.on('pitchstart', onUserStart)
-    map.on('zoomstart', onUserStart)
-    map.on('dragend', onUserEnd)
-    map.on('rotateend', onUserEnd)
-    map.on('pitchend', onUserEnd)
-    map.on('zoomend', onUserEnd)
-
-    const rotateBase = (now) => {
-      const delta = (now - lastTime) / 1000
-      lastTime = now
-      if (mapRef.current && !userInteracting && !drawModeRef.current) {
-        const curBearing = mapRef.current.getBearing()
-        mapRef.current.setBearing((curBearing + delta * 6) % 360)
-      }
-      animId = requestAnimationFrame(rotateBase)
-    }
-
-    const timer = setTimeout(() => {
-      lastTime = performance.now()
-      animId = requestAnimationFrame(rotateBase)
-    }, 1000)
-
-    return () => {
-      clearTimeout(timer)
-      if (animId) cancelAnimationFrame(animId)
-      if (map) {
-        map.off('dragstart', onUserStart)
-        map.off('rotatestart', onUserStart)
-        map.off('pitchstart', onUserStart)
-        map.off('zoomstart', onUserStart)
-        map.off('dragend', onUserEnd)
-        map.off('rotateend', onUserEnd)
-        map.off('pitchend', onUserEnd)
-        map.off('zoomend', onUserEnd)
-      }
-    }
-  }, [selectedId])
 
   // free-draw mode bookkeeping (cursor, dblclick-zoom, pending shape)
   useEffect(() => {

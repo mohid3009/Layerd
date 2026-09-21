@@ -1,4 +1,4 @@
-# Layerd — Demo Build (frontend only, no backend)
+# Avani — Demo Build (frontend only, no backend)
 
 The FastAPI/PostGIS backend, Electron desktop shell and LiDAR pipeline were removed
 for this demo. Everything now runs from the frontend alone — no Python, no Node

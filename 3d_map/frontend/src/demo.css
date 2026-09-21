@@ -1,0 +1,14 @@
+@media print {
+  body::after {
+    content: 'DEMO — NOT A LEGAL DOCUMENT';
+    position: fixed;
+    top: 45%;
+    left: 5%;
+    width: 90%;
+    text-align: center;
+    transform: rotate(-25deg);
+    font: bold 32px system-ui, sans-serif;
+    opacity: 0.25;
+    z-index: 10001;
+  }
+}

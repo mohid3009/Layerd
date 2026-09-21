@@ -1,3 +1,6 @@
+import { unitRenderRange } from './verticalGeometry.js'
+
+
 // Per-floor 3D rendering helper.
 //
 // Multi-storey buildings are split into one extrusion slice per storey, each
@@ -117,8 +120,7 @@ export function unitSliceFeatures(feature, units, floorGap = 0) {
   const out = []
   for (const u of units) {
     const f = u.floor_index
-    const base = f < 0 ? -f * (slice + floorGap) : (f - 1) * (slice + floorGap)
-    const top = base + slice
+    const { base, top } = unitRenderRange(u, floorGap)
     const coords = (u.polygon || []).map(([nx, ny]) => [x0 + nx * spanLon, y0 + ny * spanLat])
     if (coords.length < 3) continue
     coords.push(coords[0])

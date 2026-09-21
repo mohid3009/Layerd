@@ -36,12 +36,12 @@ export default function Topbar({ session, onLogout, onSwitchRole, children }) {
 
   return (
     <header className="topbar">
-      <div className="brand" onClick={() => navigate('/dashboard')} title="Layerd Cadastre Home">
-        <div className="brand-mark" aria-label="Layerd logo">
+      <div className="brand" onClick={() => navigate('/dashboard')} title="Avani Cadastre Home">
+        <div className="brand-mark" aria-label="Avani logo">
           <CubeMark size={22} tint={isCitizen ? '#4C5BD4' : isRegistrar ? '#C9A45C' : '#8B93E8'} />
         </div>
         <div className="brand-text">
-          <h1>Layerd</h1>
+          <h1>Avani</h1>
           <span className="brand-tag">National 3D Cadastre</span>
         </div>
       </div>
@@ -110,13 +110,13 @@ export default function Topbar({ session, onLogout, onSwitchRole, children }) {
       {/* Registrar search box or citizen quick-search are injected via children */}
       {children}
       {isCitizen && !children && (
-        <form onSubmit={handleSearch} className="top-search citizen-top-search" style={{ margin: '0 8px' }}>
+        <form onSubmit={handleSearch} className="top-search citizen-top-search">
           <input
             className="search"
             placeholder="Search ULPIN / property ID…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            style={{ width: '210px', height: '32px', fontSize: '12px' }}
+            aria-label="Search ULPIN or property ID"
           />
         </form>
       )}

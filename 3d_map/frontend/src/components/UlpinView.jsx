@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import { getSavedBuildings, fetchUnits, generateUnits, deleteUnits, updateUnit, digipin, allUnits, demoBaseUlpin, detectVolumetricOverlaps, overlapsForUnit, unitZRange, proposeUnitCorrection, confirmUnitCorrection, rejectUnitCorrection, getPendingUnitEdits, proposeBuildingEdit } from '../api.js'
 import BuildingsMap from './BuildingsMap.jsx'
 import { TIME_LIGHTING_PRESETS } from '../constants.js'
+import { unitRenderRange } from '../verticalGeometry.js'
 
 const FH = 3 // storey height used by the generator (m)
 const FLOOR_GAP = 0.7 // vertical gap between floors (m) — keeps every level visible in 3D
@@ -37,16 +38,17 @@ function bboxOf(feature) {
 }
 
 const UnitMesh = React.memo(function UnitMesh({ unit, w, d, fh, floorGap, color, selected, onPick }) {
+  const { base: yPos, top } = unitRenderRange(unit, floorGap, unit.mock ? fh : 3)
+  const depth = top - yPos
   const geo = useMemo(() => {
     const shape = new THREE.Shape(
       unit.polygon.map(([x, y]) => new THREE.Vector2(x * w - w / 2, y * d - d / 2)),
     )
-    const g = new THREE.ExtrudeGeometry(shape, { depth: fh, bevelEnabled: false })
+    const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false })
     g.rotateX(-Math.PI / 2) // extrude upward, footprint flat on the ground plane
     return g
-  }, [unit, w, d, fh])
-  const f = unit.floor_index
-  const yPos = f < 0 ? f * (fh + floorGap) : (f - 1) * (fh + floorGap)
+  }, [unit, w, d, depth])
+  useEffect(() => () => geo.dispose(), [geo])
   return (
     <mesh
       geometry={geo}
@@ -74,7 +76,7 @@ export default function UlpinView({ session }) {
   // Support deep-link: /ulpin?building=<id> (navigated from the dashboard map)
   const initialBuilding = searchParams.get('building')
   const bootstrappedRef = useRef(false)
-  const canManage = session?.role !== 'citizen'
+  const canManage = session?.role === 'surveyor' || session?.role === 'registrar'
   const isSurveyor = session?.role === 'surveyor'
   const isRegistrar = session?.role === 'registrar'
   const [buildings, setBuildings] = useState([])
@@ -317,6 +319,8 @@ export default function UlpinView({ session }) {
       owner_name: selUnit.owner_name,
       rights_type: selUnit.rights_type,
       area_sqm: selUnit.area_sqm,
+      z_min: unitZRange(selUnit).zMin,
+      z_max: unitZRange(selUnit).zMax,
       resolution_note: '',
     })
     setCorrectingUnit(true)
@@ -574,7 +578,16 @@ export default function UlpinView({ session }) {
                       onPick={(unit) => setSelUlpin(unit.unit_ulpin)}
                     />
                   ))}
-                  <OrbitControls autoRotate autoRotateSpeed={1.0} enableDamping dampingFactor={0.05} />
+                  <OrbitControls
+                    makeDefault
+                    enableDamping
+                    dampingFactor={0.05}
+                    mouseButtons={{
+                      LEFT: 2,   // THREE.MOUSE.PAN — left-drag pans, so clicks don't rotate
+                      MIDDLE: 1, // THREE.MOUSE.DOLLY
+                      RIGHT: 0,  // THREE.MOUSE.ROTATE — right-drag rotates
+                    }}
+                  />
                 </Canvas>
               </div>
             </div>
@@ -901,6 +914,16 @@ export default function UlpinView({ session }) {
                           value={correctionDraft.area_sqm}
                           onChange={(e) => setCorrectionDraft({ ...correctionDraft, area_sqm: e.target.value })}
                         />
+                      </label>
+                      <label>
+                        <span>minimum elevation (m, relative to ground)</span>
+                        <input type="number" step="any" value={correctionDraft.z_min}
+                          onChange={(e) => setCorrectionDraft({ ...correctionDraft, z_min: e.target.value })} />
+                      </label>
+                      <label>
+                        <span>maximum elevation (m, relative to ground)</span>
+                        <input type="number" step="any" value={correctionDraft.z_max}
+                          onChange={(e) => setCorrectionDraft({ ...correctionDraft, z_max: e.target.value })} />
                       </label>
                       <label>
                         <span>resolution note</span>

@@ -14,7 +14,7 @@ export const ROLE_LABELS = {
   registrar: 'Registrar',
 }
 
-export const SESSION_KEY = 'layerd-session'
+export const SESSION_KEY = 'avani-session'
 
 export const TIME_LIGHTING_PRESETS = {
   dawn: {

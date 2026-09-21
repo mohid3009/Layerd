@@ -7,8 +7,11 @@
 //     fully interactive without a server
 // The baked dataset is immutable; only user mutations go to localStorage.
 
-const MUT_KEY = 'layerd-demo-mutations'
-const UNITS_KEY = 'layerd-demo-units'
+import { unitZRange } from './verticalGeometry.js'
+export { unitZRange } from './verticalGeometry.js'
+
+const MUT_KEY = 'avani-demo-mutations'
+const UNITS_KEY = 'avani-demo-units'
 
 const SESSION = {
   session_id: 'chennai-t-nagar',
@@ -119,7 +122,7 @@ export const syncSavedBuildings = async (fc, sessionId) => {
 }
 
 // ── building edits & Surveyor Proposal Workflow ──────────────────────────────
-const PENDING_BLDG_EDITS_KEY = 'layerd-demo-pending-building-edits'
+const PENDING_BLDG_EDITS_KEY = 'avani-demo-pending-building-edits'
 
 export const getPendingBuildingEdits = () => {
   try {
@@ -400,6 +403,8 @@ export const updateUnit = async (buildingId, unitUlpin, patch) => {
   const idx = units.findIndex((u) => u.unit_ulpin === unitUlpin)
   if (idx === -1) throw new Error('unit not found')
   const next = { ...units[idx] }
+  if (next.pending_edit_id) throw new Error('Resolve the pending correction before editing this unit')
+  next.revision = (next.revision || 0) + 1
   if (patch.owner_name != null && String(patch.owner_name).trim()) {
     next.owner_name = String(patch.owner_name).trim()
   }
@@ -750,14 +755,6 @@ export const fetchDigipinApi = async (lat, lon, floorIndex = null) => {
 
 
 // ── Volumetric Overlap Detection Engine ──────────────────────────────────────
-const FLOOR_HEIGHT_M = 3.0 // standard floor-to-floor height in metres
-
-// Compute Z-extent for a unit
-export const unitZRange = (unit) => {
-  const fi = unit.floor_index ?? 1
-  const fh = FLOOR_HEIGHT_M
-  return { zMin: fi * fh, zMax: (fi + 1) * fh }
-}
 
 // Compute 2D bounding box from normalised polygon [0..1] coordinates
 const polyBbox = (poly) => {
@@ -825,7 +822,7 @@ export const overlapsForUnit = (units, targetUlpin, footprintAreaM2) => {
 }
 
 // ── Pending Unit Corrections (Surveyor → Registrar Approval) ─────────────────
-const PENDING_UNIT_KEY = 'layerd-pending-unit-edits'
+const PENDING_UNIT_KEY = 'avani-pending-unit-edits'
 
 function pendingUnitEditsDb() {
   try {
@@ -856,8 +853,14 @@ export const proposeUnitCorrection = async (buildingId, unitUlpin, patch, sessio
     const n = Number(patch.area_sqm)
     if (!Number.isNaN(n)) after.area_sqm = Math.max(1, Math.round(n))
   }
+  if (patch.z_min != null && String(patch.z_min).trim() === '') throw new Error('Minimum height is required')
+  if (patch.z_max != null && String(patch.z_max).trim() === '') throw new Error('Maximum height is required')
   if (patch.z_min != null) after.z_min = Number(patch.z_min)
   if (patch.z_max != null) after.z_max = Number(patch.z_max)
+  unitZRange(after)
+  if (pendingUnitEditsDb().some((e) => e.building_id === buildingId && e.unit_ulpin === unitUlpin && e.status === 'pending')) {
+    throw new Error('This unit already has a pending correction')
+  }
   if (patch.resolution_note) after.resolution_note = patch.resolution_note
 
   // Compute overlap delta
@@ -875,6 +878,7 @@ export const proposeUnitCorrection = async (buildingId, unitUlpin, patch, sessio
     id: editId,
     building_id: buildingId,
     unit_ulpin: unitUlpin,
+    unit_revision: before.revision || 0,
     before: {
       owner_name: before.owner_name,
       rights_type: before.rights_type,
@@ -925,7 +929,22 @@ export const confirmUnitCorrection = async (editId, registrarSession) => {
   const uIdx = units.findIndex((u) => u.unit_ulpin === entry.unit_ulpin)
   if (uIdx === -1) throw new Error('unit not found')
 
-  const next = { ...units[uIdx], ...entry.after,
+  const current = units[uIdx]
+  if (entry.status !== 'pending' || current.pending_edit_id !== editId) {
+    throw new Error('This correction is no longer pending')
+  }
+  if (entry.unit_revision != null && (current.revision || 0) !== entry.unit_revision) {
+    throw new Error('The unit changed after this correction was proposed')
+  }
+  const candidate = { ...current, ...entry.after }
+  unitZRange(candidate)
+  const remainingOverlaps = overlapsForUnit(
+    units.map((u, i) => i === uIdx ? candidate : u), entry.unit_ulpin,
+  )
+  if (remainingOverlaps.length) throw new Error('Resolve all volumetric overlaps before approving this correction')
+
+  const next = { ...candidate,
+    revision: (current.revision || 0) + 1,
     validation_status: 'confirmed',
     pending_edit_id: null,
     updated_at: new Date().toISOString(),
@@ -956,6 +975,10 @@ export const rejectUnitCorrection = async (editId, registrarSession, reason = ''
   const db = unitsDb()
   const units = db[entry.building_id] || []
   const uIdx = units.findIndex((u) => u.unit_ulpin === entry.unit_ulpin)
+  if (uIdx === -1) throw new Error('unit not found')
+  if (entry.status !== 'pending' || units[uIdx].pending_edit_id !== editId) {
+    throw new Error('This correction is no longer pending')
+  }
   if (uIdx !== -1) {
     // Revert back to prior validation status
     units[uIdx] = { ...units[uIdx],
