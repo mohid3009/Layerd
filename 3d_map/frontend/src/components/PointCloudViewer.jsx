@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -140,6 +140,23 @@ export default function PointCloudViewer() {
 
   const onDrop = useCallback((e) => { e.preventDefault(); loadFile(e.dataTransfer.files?.[0]) }, [loadFile])
 
+  const loadFromUrl = useCallback(async (url, name) => {
+    setError(null); setLoading(true); setGeometry(null); setFilename(name)
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const buffer = await res.arrayBuffer()
+      const geom = new PLYLoader().parse(buffer)
+      geom.computeBoundingBox()
+      const centre = new THREE.Vector3()
+      geom.boundingBox.getCenter(centre)
+      geom.translate(-centre.x, -centre.y, -centre.z)
+      setGeometry(geom)
+      setFitTrigger((t) => t + 1)
+    } catch (e) { setError(`Failed to load sample: ${e.message}`) }
+    finally { setLoading(false) }
+  }, [])
+
   return (
     <main className="workspace" style={{ display:'flex', height:'calc(100vh - 52px)', overflow:'hidden' }}>
       {/* ── sidebar ── */}
@@ -160,6 +177,12 @@ export default function PointCloudViewer() {
             <span className="muted tiny">{loading ? 'parsing…' : 'drop .ply here or click to browse'}</span>
           </div>
           {error && <p style={{ color:'var(--danger,#e05)', fontSize:11, margin:'4px 0' }}>{error}</p>}
+          <div style={{ marginTop: 12 }}>
+            <span className="muted tiny" style={{ display: 'block', marginBottom: 6 }}>Or load a sample:</span>
+            <button className="btn tiny" onClick={() => loadFromUrl('/samples/sample_lidar.ply', 'sample_lidar.ply')}>
+              load sample_lidar.ply
+            </button>
+          </div>
         </div>
 
         {geometry && (
