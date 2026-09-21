@@ -587,6 +587,8 @@ export default function UlpinView({ session }) {
                       MIDDLE: 1, // THREE.MOUSE.DOLLY
                       RIGHT: 0,  // THREE.MOUSE.ROTATE — right-drag rotates
                     }}
+                    minPolarAngle={0}
+                    maxPolarAngle={Math.PI / 2 - 0.05}
                   />
                 </Canvas>
               </div>
