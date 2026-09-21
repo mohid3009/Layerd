@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Building2, FileText, Layers, LogOut, ShieldCheck } from 'lucide-react'
+import { Building2, Cloud, FileText, Image, Layers, LogOut, ScanLine, ShieldCheck } from 'lucide-react'
 import CubeMark from '../CubeMark.jsx'
 import { ROLE_LABELS } from '../../constants.js'
 
@@ -88,6 +88,27 @@ export default function Topbar({ session, onLogout, onSwitchRole, children }) {
               title={isRegistrar ? 'Registrar GIS Dashboard & Pending Confirmations' : 'Surveyor Dashboard'}
             >
               <Building2 size={14} /> {isRegistrar ? 'Registrar Dashboard' : 'Dashboard'}
+            </NavLink>
+            <NavLink
+              to="/lidar"
+              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
+              title="LiDAR footprint extraction & building edit"
+            >
+              <ScanLine size={14} /> LiDAR Scan
+            </NavLink>
+            <NavLink
+              to="/pointcloud"
+              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
+              title="View PLY point cloud data in 3D"
+            >
+              <Cloud size={14} /> Point Cloud
+            </NavLink>
+            <NavLink
+              to="/oblique"
+              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
+              title="Manage oblique imagery captures"
+            >
+              <Image size={14} /> Oblique
             </NavLink>
             <NavLink
               to="/ulpin"

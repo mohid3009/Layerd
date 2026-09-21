@@ -942,6 +942,57 @@ function DashboardContent({ session, onLogout, onSwitchRole }) {
             </>
           )}
 
+          {/* ── LiDAR Re-extraction panel (Registrar sessions tab) ──── */}
+          {isRegistrar && panelTab === 'sessions' && (
+            <div className="panel-section acc-blue" style={{ marginTop: 14 }}>
+              <h3>LiDAR re-extraction</h3>
+              <p className="muted tiny" style={{ margin: '4px 0 10px', lineHeight: 1.5 }}>
+                Re-run the extraction pipeline after a new drone or LiDAR capture.
+              </p>
+              <button
+                className="btn"
+                onClick={() => showToast('info', `Re-extraction logged for ${selectedId || 'this area'}`)}
+              >
+                Log re-extraction
+              </button>
+              <p className="muted tiny" style={{ marginTop: 8, lineHeight: 1.5 }}>
+                Edits and approvals flow into the same activity log citizens see on their dashboard.
+              </p>
+            </div>
+          )}
+
+          {/* ── My Proposals panel (Surveyor sessions tab) ─────────── */}
+          {isSurveyor && (panelTab === 'sessions' || !isRegistrar) && (() => {
+            const myProposals = pendingBuildingProposals.filter(
+              (p) => p.proposed_by === session?.name || p.role === session?.role
+            )
+            return myProposals.length > 0 ? (
+              <div className="panel-section acc-clay" style={{ marginTop: 14 }}>
+                <h3>
+                  my proposals
+                  <span className="pending-unit-badge" style={{ marginLeft: 8 }}>{myProposals.length}</span>
+                </h3>
+                {myProposals.map((p) => (
+                  <div key={p.id} className="pending-row" style={{ flexDirection: 'column', gap: 4, alignItems: 'stretch' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="mono tiny">{p.building_id}</span>
+                      <span className="muted tiny">{new Date(p.created_at).toLocaleTimeString()}</span>
+                    </div>
+                    {p.before.height_m !== p.after.height_m && (
+                      <span className="muted tiny">height: {p.before.height_m} m → {p.after.height_m} m</span>
+                    )}
+                    {p.before.stories !== p.after.stories && (
+                      <span className="muted tiny">storeys: {p.before.stories} → {p.after.stories}</span>
+                    )}
+                    <div className="btn-row" style={{ marginTop: 2 }}>
+                      <button className="btn" onClick={() => setSelectedId(p.building_id)}>focus map</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null
+          })()}
+
           {isRegistrar && panelTab === 'confirmations' && (
             <div className="panel-section acc-clay">
               <h3>
@@ -1083,9 +1134,62 @@ function DashboardContent({ session, onLogout, onSwitchRole }) {
                     </div>
                   ))
                 ) : (
-                  <p className="all-clear tiny">✓ no unit corrections pending.</p>
+                  <p className="all-clear tiny">no unit corrections pending.</p>
                 )}
               </div>
+
+              {/* ── Survey Queue panel ─────────────────────────────────── */}
+              {(() => {
+                const queueUnits = allUnits().filter((u) => u.validation_status !== 'confirmed').slice(0, 10)
+                return (
+                  <div className="panel-section acc-green" style={{ marginTop: 14 }}>
+                    <h3>
+                      survey queue
+                      {queueUnits.length > 0 && (
+                        <span className="pending-unit-badge" style={{ marginLeft: 8 }}>{queueUnits.length}</span>
+                      )}
+                    </h3>
+                    {queueUnits.length ? (
+                      queueUnits.map((u) => (
+                        <div key={u.unit_ulpin} className="pending-row" style={{ flexDirection: 'column', gap: 4, alignItems: 'stretch' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span className="mono tiny">{u.unit_ulpin}</span>
+                            <span className="muted tiny">{u.validation_status}</span>
+                          </div>
+                          <span className="muted tiny">{u.owner_name} · bldg {u.building_id}</span>
+                          {u.area_sqm != null && (
+                            <span className="muted tiny">{u.area_sqm} m²</span>
+                          )}
+                          <div className="btn-row" style={{ marginTop: 2 }}>
+                            <button
+                              className="btn primary"
+                              onClick={() => {
+                                const pending = getPendingUnitEdits().find((e) => e.unit_ulpin === u.unit_ulpin || e.building_id === u.building_id)
+                                if (pending) handleApproveUnitEdit(pending.id)
+                                else showToast('success', `unit ${u.unit_ulpin} marked verified`)
+                              }}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              className="btn danger"
+                              onClick={() => {
+                                const pending = getPendingUnitEdits().find((e) => e.unit_ulpin === u.unit_ulpin || e.building_id === u.building_id)
+                                if (pending) { setRejectUnitId(pending.id); setRejectUnitReason('conflict flagged') }
+                                else showToast('info', `conflict flagged for ${u.unit_ulpin}`)
+                              }}
+                            >
+                              Flag Conflict
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="all-clear tiny">queue clear — all units verified.</p>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           )}
 

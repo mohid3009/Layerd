@@ -15,7 +15,10 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 // Heavy libs (maplibre ~800 KB, three + drei ~1 MB) load only on the
 // pages / views that actually need them.
-const UlpinView = lazy(() => import('./components/UlpinView.jsx'))
+const UlpinView        = lazy(() => import('./components/UlpinView.jsx'))
+const LidarMap         = lazy(() => import('./components/LidarMap.jsx'))
+const PointCloudViewer = lazy(() => import('./components/PointCloudViewer.jsx'))
+const ObliqueImagery   = lazy(() => import('./components/ObliqueImagery.jsx'))
 
 const PageFallback = () => <div className="loading muted">loading…</div>
 
@@ -110,6 +113,54 @@ export default function App() {
             <ErrorBoundary>
               <Suspense fallback={<PageFallback />}>
                 <UlpinView session={session} />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        }
+      />
+
+      {/* LiDAR footprint extraction — surveyor/registrar only */}
+      <Route
+        path="/lidar"
+        element={
+          <div className="app">
+            <Topbar session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />
+            <ErrorBoundary>
+              <Suspense fallback={<PageFallback />}>
+                <LidarMap
+                  canEdit={session?.role === 'surveyor' || session?.role === 'registrar'}
+                  user={session ? { name: session.name, role: session.role, username: session.username ?? session.name } : null}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        }
+      />
+
+      {/* Point cloud viewer — three.js PLY viewer */}
+      <Route
+        path="/pointcloud"
+        element={
+          <div className="app">
+            <Topbar session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />
+            <ErrorBoundary>
+              <Suspense fallback={<PageFallback />}>
+                <PointCloudViewer session={session} />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        }
+      />
+
+      {/* Oblique imagery manager */}
+      <Route
+        path="/oblique"
+        element={
+          <div className="app">
+            <Topbar session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />
+            <ErrorBoundary>
+              <Suspense fallback={<PageFallback />}>
+                <ObliqueImagery session={session} />
               </Suspense>
             </ErrorBoundary>
           </div>
