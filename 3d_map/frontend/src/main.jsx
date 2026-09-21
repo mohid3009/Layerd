@@ -6,6 +6,11 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import './demo.css'
 import './styles.css'
 
+// Automatically reload the page if a new deployment invalidates old hashed chunks (common on Vercel)
+window.addEventListener('vite:preloadError', () => {
+  window.location.reload()
+})
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <ErrorBoundary>
     <BrowserRouter>
