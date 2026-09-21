@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
@@ -379,7 +379,14 @@ export default function UlpinView({ session }) {
 
         {selUnit && (
           <div className="panel-section">
-            <h3>unit details</h3>
+            <h3 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              unit details
+              {selUnit.validation_status === 'conflict' && (
+                <span style={{ background: 'var(--danger,#e05)', color: '#fff', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>
+                  o! TOPOLOGY CONFLICT
+                </span>
+              )}
+            </h3>
             <table className="kv">
               <tbody>
                 <tr><td>ULPIN</td><td className="mono">{selUnit.unit_ulpin}</td></tr>
@@ -389,8 +396,11 @@ export default function UlpinView({ session }) {
                 <tr><td>rights</td><td>{selUnit.rights_type}</td></tr>
                 <tr><td>owner</td><td>{selUnit.owner_name}</td></tr>
                 <tr><td>owner id</td><td className="mono">{selUnit.owner_id}</td></tr>
+                <tr><td>evidence</td><td>{selUnit.evidence || selUnit.segmentation}</td></tr>
+                {selUnit.confidence != null && (
+                  <tr><td>confidence</td><td>{(selUnit.confidence * 100).toFixed(1)}%</td></tr>
+                )}
                 <tr><td>status</td><td className={selUnit.validation_status === 'conflict' ? 'status-pending' : 'status-confirmed'}>{selUnit.validation_status}</td></tr>
-                <tr><td>segmentation</td><td>{selUnit.segmentation}</td></tr>
               </tbody>
             </table>
           </div>

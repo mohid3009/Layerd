@@ -338,7 +338,7 @@ def ulpin_units_for_building(building_id: str = Query(...)):
 
     units = []
     for floor_index in list(range(-basements, 0)) + list(range(1, floors + 1)):
-        for j, (x0, y0, x1, y1) in enumerate(rects, start=1):
+        for j, (x0, y0, x1, y1, conf) in enumerate(rects, start=1):
             ulp = unit_ulpin(base, floor_index, j)
             owner = owner_for(ulp, floor_index)
             poly = [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]
@@ -424,7 +424,7 @@ async def ulpin_units_generate(
     units = []
     for floor_index in list(range(-int(basements), 0)) + list(range(1, int(floors) + 1)):
         floor_units = []
-        for j, (x0, y0, x1, y1) in enumerate(seg["rects"], start=1):
+        for j, (x0, y0, x1, y1, conf) in enumerate(seg["rects"], start=1):
             ulp = unit_ulpin(base, floor_index, j)
             owner = owner_for(ulp, floor_index)
             poly = [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]
@@ -441,6 +441,8 @@ async def ulpin_units_generate(
                 "owner_id": owner["owner_id"],
                 "owner_name": owner["owner_name"],
                 "segmentation": seg["source"],
+                "confidence": conf,
+                "evidence": seg["source"],
                 "validation_status": "valid",
             })
         # topology check (PRD FR13): units on a floor must not overlap
@@ -457,12 +459,41 @@ async def ulpin_units_generate(
         "building_id": building_id,
         "base_ulpin": base,
         "segmentation": seg["source"],
+                "confidence": conf,
+                "evidence": seg["source"],
         "floors": floors,
         "basements": basements,
         "unit_count": len(units),
         "saved": saved,
         "units": units,
     }
+
+
+
+@app.get("/lidar/units/pending")
+def lidar_units_pending():
+    from .postgis import get_pending_unit_edits
+    return get_pending_unit_edits()
+
+@app.post("/lidar/units/update")
+def lidar_units_update(payload: dict = Body(...)):
+    from .postgis import propose_unit_edit
+    b_id = payload.get("building_id")
+    ulp = payload.get("unit_ulpin")
+    prop = payload.get("proposed_by")
+    patch = payload.get("patch")
+    edit_id = propose_unit_edit(b_id, ulp, prop, patch)
+    return {"status": "pending", "id": edit_id}
+
+@app.post("/lidar/units/confirm")
+def lidar_units_confirm(payload: dict = Body(...)):
+    from .postgis import confirm_unit_edit
+    edit_id = payload.get("id")
+    status = payload.get("status")
+    res = confirm_unit_edit(edit_id, status)
+    if not res:
+        raise HTTPException(404, "edit not found")
+    return {"status": status, "building_id": res[0], "unit_ulpin": res[1]}
 
 
 # ---------------- Citizen portal (mobile app) ----------------

@@ -422,7 +422,20 @@ export const updateUnit = async (buildingId, unitUlpin, patch) => {
   return { units }
 }
 
-export const generateUnits = async (buildingId, { floors, basements }) => {
+export const generateUnits = async (buildingId, { floors, basements, planFile }) => {
+  const fd = new FormData()
+  fd.append('building_id', buildingId)
+  fd.append('floors', floors)
+  fd.append('basements', basements || 0)
+  if (planFile) fd.append('plan', planFile)
+
+  const res = await fetch('/lidar/units/generate', { method: 'POST', body: fd })
+  if (!res.ok) throw new Error(await res.text())
+  const data = await res.json()
+  window.dispatchEvent(new Event('demo-units-changed'))
+  return data
+}
+//
   const fc = await applyMuts()
   const b = fc.features.find((f) => f.properties.building_id === buildingId)
   if (!b) throw new Error('building not found')
@@ -915,7 +928,15 @@ export const proposeUnitCorrection = async (buildingId, unitUlpin, patch, sessio
 }
 
 // Registrar retrieves all pending unit edits
-export const getPendingUnitEdits = () => pendingUnitEditsDb().filter((e) => e.status === 'pending')
+export const getPendingUnitEdits = async () => {
+  try {
+    const res = await fetch('/lidar/units/pending')
+    if (res.ok) return await res.json()
+  } catch (e) {
+    console.error(e)
+  }
+  return []
+}
 
 // Registrar approves a pending unit correction
 export const confirmUnitCorrection = async (editId, registrarSession) => {

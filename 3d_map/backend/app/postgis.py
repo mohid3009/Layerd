@@ -58,10 +58,23 @@ CREATE TABLE IF NOT EXISTS ulpin_units (
     owner_id TEXT,
     owner_name TEXT,
     segmentation TEXT,
+    confidence DOUBLE PRECISION,
+    evidence TEXT,
     validation_status TEXT DEFAULT 'valid',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS ulpin_units_building_idx ON ulpin_units (building_id);
+
+CREATE TABLE IF NOT EXISTS pending_unit_edits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    building_id TEXT NOT NULL,
+    unit_ulpin TEXT NOT NULL,
+    proposed_by TEXT NOT NULL,
+    patch JSONB NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    resolved_at TIMESTAMPTZ
+);
 
 -- citizen portal: complaints raised from the mobile app
 CREATE TABLE IF NOT EXISTS citizen_complaints (
@@ -390,7 +403,7 @@ def save_units(building_id, units):
                         u["unit_ulpin"], building_id, u["base_ulpin"], u["floor_index"],
                         u["unit_no"], json.dumps(u["polygon"]), u.get("area_sqm"),
                         u.get("rights_type"), u.get("owner_id"), u.get("owner_name"),
-                        u.get("segmentation"), u.get("validation_status", "valid"),
+                        u.get("segmentation"), u.get("confidence"), u.get("evidence"), u.get("validation_status", "valid"),
                     )
                     for u in units
                 ]
@@ -398,12 +411,13 @@ def save_units(building_id, units):
                     cur,
                     """INSERT INTO ulpin_units (unit_ulpin, building_id, base_ulpin, floor_index,
                                                unit_no, polygon, area_sqm, rights_type, owner_id,
-                                               owner_name, segmentation, validation_status)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                               owner_name, segmentation, confidence, evidence, validation_status)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                        ON CONFLICT (unit_ulpin) DO UPDATE SET
                          polygon = EXCLUDED.polygon, area_sqm = EXCLUDED.area_sqm,
                          rights_type = EXCLUDED.rights_type, owner_id = EXCLUDED.owner_id,
                          owner_name = EXCLUDED.owner_name, segmentation = EXCLUDED.segmentation,
+                         confidence = EXCLUDED.confidence, evidence = EXCLUDED.evidence,
                          validation_status = EXCLUDED.validation_status""",
                     rows,
                     page_size=500,
@@ -419,7 +433,7 @@ def fetch_units(building_id):
         with conn.cursor() as cur:
             cur.execute(
                 """SELECT unit_ulpin, base_ulpin, floor_index, unit_no, polygon, area_sqm,
-                          rights_type, owner_id, owner_name, segmentation, validation_status
+                          rights_type, owner_id, owner_name, segmentation, validation_status, confidence, evidence
                    FROM ulpin_units WHERE building_id = %s
                    ORDER BY floor_index, unit_no""",
                 (building_id,),
@@ -431,6 +445,7 @@ def fetch_units(building_id):
             "floor_index": r[2], "unit_no": r[3], "polygon": r[4], "area_sqm": r[5],
             "rights_type": r[6], "owner_id": r[7], "owner_name": r[8],
             "segmentation": r[9], "validation_status": r[10],
+            "confidence": r[11], "evidence": r[12],
         }
         for r in rows
     ]
@@ -443,3 +458,43 @@ def delete_units(building_id):
         with conn.cursor() as cur:
             cur.execute("DELETE FROM ulpin_units WHERE building_id = %s", (building_id,))
             return cur.rowcount
+
+def propose_unit_edit(building_id, unit_ulpin, proposed_by, patch):
+    ensure_init()
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO pending_unit_edits (building_id, unit_ulpin, proposed_by, patch) VALUES (%s, %s, %s, %s) RETURNING id",
+                (building_id, unit_ulpin, proposed_by, json.dumps(patch)),
+            )
+            return cur.fetchone()[0]
+
+def get_pending_unit_edits():
+    ensure_init()
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, building_id, unit_ulpin, proposed_by, patch, status, created_at FROM pending_unit_edits WHERE status = 'pending'")
+            rows = cur.fetchall()
+    return [
+        {
+            "id": r[0], "building_id": r[1], "unit_ulpin": r[2],
+            "proposed_by": r[3], "patch": r[4], "status": r[5], "created_at": r[6].isoformat()
+        }
+        for r in rows
+    ]
+
+def confirm_unit_edit(edit_id, status):
+    ensure_init()
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE pending_unit_edits SET status = %s, resolved_at = now() WHERE id = %s RETURNING building_id, unit_ulpin, patch", (status, edit_id))
+            row = cur.fetchone()
+            if not row:
+                return None
+            building_id, unit_ulpin, patch = row
+            if status == 'confirmed':
+                if 'owner_name' in patch:
+                    cur.execute("UPDATE ulpin_units SET owner_name = %s WHERE unit_ulpin = %s", (patch['owner_name'], unit_ulpin))
+                if 'rights_type' in patch:
+                    cur.execute("UPDATE ulpin_units SET rights_type = %s WHERE unit_ulpin = %s", (patch['rights_type'], unit_ulpin))
+            return row
