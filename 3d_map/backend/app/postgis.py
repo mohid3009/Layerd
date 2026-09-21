@@ -498,3 +498,38 @@ def confirm_unit_edit(edit_id, status):
                 if 'rights_type' in patch:
                     cur.execute("UPDATE ulpin_units SET rights_type = %s WHERE unit_ulpin = %s", (patch['rights_type'], unit_ulpin))
             return row
+
+def save_floor_units(building_id, floor_index, units):
+    """Replace the units of a single floor in a building; returns the saved count."""
+    ensure_init()
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM ulpin_units WHERE building_id = %s AND floor_index = %s", (building_id, floor_index))
+            if units:
+                rows = [
+                    (
+                        u["unit_ulpin"], building_id, u["base_ulpin"], u["floor_index"],
+                        u["unit_no"], json.dumps(u["polygon"]), u.get("area_sqm"),
+                        u.get("rights_type"), u.get("owner_id"), u.get("owner_name"),
+                        u.get("segmentation"), u.get("confidence"), u.get("evidence"), u.get("validation_status", "valid"),
+                    )
+                    for u in units
+                ]
+                import psycopg2.extras
+                psycopg2.extras.execute_batch(
+                    cur,
+                    """INSERT INTO ulpin_units (unit_ulpin, building_id, base_ulpin, floor_index,
+                                               unit_no, polygon, area_sqm, rights_type, owner_id,
+                                               owner_name, segmentation, confidence, evidence, validation_status)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                       ON CONFLICT (unit_ulpin) DO UPDATE SET
+                         polygon = EXCLUDED.polygon, area_sqm = EXCLUDED.area_sqm,
+                         rights_type = EXCLUDED.rights_type, owner_id = EXCLUDED.owner_id,
+                         owner_name = EXCLUDED.owner_name, segmentation = EXCLUDED.segmentation,
+                         confidence = EXCLUDED.confidence, evidence = EXCLUDED.evidence,
+                         validation_status = EXCLUDED.validation_status""",
+                    rows,
+                    page_size=500,
+                )
+                return len(rows)
+            return 0

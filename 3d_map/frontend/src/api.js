@@ -389,6 +389,20 @@ export const fetchUnits = async (buildingId) => {
   }
 }
 
+
+export const generateFloorUnits = async (buildingId, floorIndex, planFile) => {
+  const fd = new FormData()
+  fd.append('building_id', buildingId)
+  fd.append('floor_index', floorIndex)
+  if (planFile) fd.append('plan', planFile)
+
+  const res = await fetch('/lidar/units/generate_floor', { method: 'POST', body: fd })
+  if (!res.ok) throw new Error(await res.text())
+  const data = await res.json()
+  window.dispatchEvent(new Event('demo-units-changed'))
+  return data
+}
+
 export const deleteUnits = async (buildingId) => {
   const db = unitsDb()
   delete db[buildingId]

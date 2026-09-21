@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
-import { getSavedBuildings, fetchUnits, generateUnits, deleteUnits } from '../api.js'
+import { getSavedBuildings, fetchUnits, generateUnits, generateFloorUnits, deleteUnits } from '../api.js'
 import BuildingsMap from './BuildingsMap.jsx'
 
 const FH = 3          // storey height used by the generator (m)
@@ -61,6 +61,7 @@ export default function UlpinView({ session }) {
   const [basements, setBasements] = useState(0)
   const [fh, setFh]               = useState(3)
   const [planFile, setPlanFile]   = useState(null)
+  const [floorPlanFile, setFloorPlanFile] = useState(null)
   const [busy, setBusy]           = useState(false)
   const [msg, setMsg]             = useState(null)
   const [err, setErr]             = useState(null)
@@ -112,6 +113,19 @@ export default function UlpinView({ session }) {
         setUnits(r.units)
         setMsg(`${r.unit_count} units generated via ${r.segmentation} segmentation — base ULPIN ${r.base_ulpin}`)
         setBusy(false)
+      })
+      .catch((e) => { setErr(e.message); setBusy(false) })
+  }
+
+  const generateFloor = () => {
+    if (!selId || !selSlab) return
+    setBusy(true); setErr(null); setMsg(null)
+    generateFloorUnits(selId, selSlab.floor_index, floorPlanFile)
+      .then((r) => {
+        setUnits(r.units)
+        setMsg(`Floor ${selSlab.floor_index} regenerated via ${r.segmentation} segmentation`)
+        setBusy(false)
+        setFloorPlanFile(null)
       })
       .catch((e) => { setErr(e.message); setBusy(false) })
   }
@@ -412,10 +426,24 @@ export default function UlpinView({ session }) {
             <table className="kv">
               <tbody>
                 <tr><td>section</td><td>{selSlab.floor_index < 0 ? `basement ${-selSlab.floor_index}` : `floor ${selSlab.floor_index}`}</td></tr>
-                <tr><td>z-range</td><td>{selSlab.floor_index * FH} m → {(selSlab.floor_index + 1) * FH} m</td></tr>
-                <tr><td>ULPINs</td><td>generate units to populate this section</td></tr>
+                <tr><td>z-range</td><td>{selSlab.floor_index * FH} m - {(selSlab.floor_index + 1) * FH} m</td></tr>
               </tbody>
             </table>
+            
+            {canManage && (
+              <div style={{ marginTop: 12 }}>
+                <p className="muted tiny" style={{ marginBottom: 4 }}>override this floor's segmentation</p>
+                <input 
+                  type="file" 
+                  accept="image/png, image/jpeg" 
+                  onChange={(e) => setFloorPlanFile(e.target.files[0])}
+                  style={{ fontSize: 11, marginBottom: 8 }}
+                />
+                <button className="btn primary" onClick={generateFloor} disabled={busy} style={{ width: '100%', fontSize: 12, padding: '4px 8px' }}>
+                  {busy ? 'generating...' : 'generate units for this floor'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </aside>
