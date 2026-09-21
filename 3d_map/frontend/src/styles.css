@@ -3891,6 +3891,7 @@ td.diff-after {
   height: 100%;
   overflow-y: auto;
   padding: 16px;
+  padding-bottom: 80px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -5103,4 +5104,6 @@ body.modal-scroll-lock { overflow: hidden; }
   .citizen-modal .cert-frame { padding: 14px; }
   .citizen-modal .cert-frame .flex.items-center.justify-between.flex-wrap { gap: 8px; }
 }
+
+
 
