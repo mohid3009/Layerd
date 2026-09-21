@@ -179,9 +179,14 @@ export default function PointCloudViewer() {
           {error && <p style={{ color:'var(--danger,#e05)', fontSize:11, margin:'4px 0' }}>{error}</p>}
           <div style={{ marginTop: 12 }}>
             <span className="muted tiny" style={{ display: 'block', marginBottom: 6 }}>Or load a sample:</span>
-            <button className="btn tiny" onClick={() => loadFromUrl('/samples/sample_lidar.ply', 'sample_lidar.ply')}>
-              load sample_lidar.ply
-            </button>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button className="btn tiny" onClick={() => loadFromUrl('/samples/sample_lidar.ply', 'sample_lidar.ply')}>
+                load sample_lidar.ply
+              </button>
+              <button className="btn tiny" onClick={() => loadFromUrl('/samples/full_lidar_centered.ply', 'full_lidar_centered.ply')}>
+                load full_lidar_centered.ply
+              </button>
+            </div>
           </div>
         </div>
 
