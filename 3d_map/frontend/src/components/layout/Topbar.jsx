@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Building2, Cloud, FileText, Image, Layers, LogOut, ScanLine, ShieldCheck } from 'lucide-react'
+import { Building2, Cloud, FileText, Image, Layers, LogOut, ScanLine, ShieldCheck, X, Settings, User } from 'lucide-react'
 import CubeMark from '../CubeMark.jsx'
 import { ROLE_LABELS } from '../../constants.js'
 
@@ -18,6 +18,7 @@ export default function Topbar({ session, onLogout, onSwitchRole, children }) {
   const isRegistrar = session?.role === 'registrar'
   const isSurveyor  = session?.role === 'surveyor'
   const [q, setQ]   = useState('')
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const navigate    = useNavigate()
 
   const handleSearch = (e) => {
@@ -173,24 +174,52 @@ export default function Topbar({ session, onLogout, onSwitchRole, children }) {
         </div>
       </div>
 
-      {/* User session badge */}
-      <div className="session-box">
-        <div className="session-user-badge">
-          <div className="user-avatar">{initials}</div>
-          <div className="session-meta">
-            <span className="session-name">{displayName}</span>
-            <span className={`session-role role-${session?.role || 'citizen'}`}>{roleName}</span>
+      {/* Avatar Button */}
+      <button className="avatar-btn" onClick={() => setIsProfileOpen(true)} title="Open Profile">
+        {initials}
+      </button>
+
+      {/* Profile Drawer */}
+      {isProfileOpen && (
+        <>
+          <div className="profile-drawer-backdrop" onClick={() => setIsProfileOpen(false)}></div>
+          <div className="profile-drawer">
+            <div className="profile-drawer-header">
+              <h2>Account</h2>
+              <button className="btn-close" onClick={() => setIsProfileOpen(false)} title="Close">
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="profile-drawer-user">
+              <div className="user-avatar large">{initials}</div>
+              <div className="session-meta">
+                <span className="session-name">{displayName}</span>
+                <span className={`session-role role-${session?.role || 'citizen'}`}>{roleName}</span>
+              </div>
+            </div>
+
+            <div className="profile-drawer-nav">
+              <button className="drawer-nav-item">
+                <User size={16} /> My Profile
+              </button>
+              <button className="drawer-nav-item">
+                <Settings size={16} /> Preferences
+              </button>
+            </div>
+            
+            <div className="profile-drawer-footer">
+              <button
+                className="btn-logout-drawer"
+                onClick={() => { onLogout?.(); navigate('/') }}
+              >
+                <LogOut size={16} />
+                <span>Log out</span>
+              </button>
+            </div>
           </div>
-        </div>
-        <button
-          className="btn-logout"
-          onClick={() => { onLogout?.(); navigate('/') }}
-          title="Log out of session"
-        >
-          <LogOut size={13} />
-          <span>Log out</span>
-        </button>
-      </div>
+        </>
+      )}
     </header>
   )
 }
