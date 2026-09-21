@@ -3873,7 +3873,8 @@ td.diff-after {
 .workspace {
   display: flex;
   width: 100%;
-  height: calc(100vh - 58px);
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   position: relative;
   background: var(--bg, #101012);
@@ -5106,6 +5107,7 @@ body.modal-scroll-lock { overflow: hidden; }
   .citizen-modal .cert-frame { padding: 14px; }
   .citizen-modal .cert-frame .flex.items-center.justify-between.flex-wrap { gap: 8px; }
 }
+
 
 
 

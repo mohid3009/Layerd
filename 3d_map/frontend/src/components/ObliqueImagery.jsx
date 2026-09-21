@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import { getSavedBuildings } from '../api.js'
 
 // ── constants ─────────────────────────────────────────────────────────────────
@@ -203,7 +203,7 @@ export default function ObliqueImagery() {
   }
 
   return (
-    <main className="workspace" style={{ display:'flex', height:'calc(100vh - 52px)', overflow:'hidden' }}>
+    <main className="workspace" style={{ display:'flex', flex: 1, minHeight: 0, overflow:'hidden' }}>
       {/* ── sidebar ── */}
       <aside className="sidebar" style={{ overflowY:'auto', flexShrink:0 }}>
         <div className="panel-section acc-blue">
