@@ -168,6 +168,8 @@ body::before { content: none; }
 /* Nav segmented pill bar */
 .mode-switch {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 3px;
   background: var(--panel2);
@@ -178,10 +180,10 @@ body::before { content: none; }
 .nav-link-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
+  gap: 4px;
+  padding: 6px 10px;
   border-radius: 8px;
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--muted);
   text-decoration: none;
