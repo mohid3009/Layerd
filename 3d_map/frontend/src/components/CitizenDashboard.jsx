@@ -297,7 +297,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
     : 100
   const needsAttention = totals.conflicts > 0
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? '{t('Good morning')}' : hour < 17 ? '{t('Good afternoon')}' : '{t('Good evening')}'
+  const greeting = hour < 12 ? t('Good morning') : hour < 17 ? t('Good afternoon') : t('Good evening')
 
   // Activity log filtered for citizen's owned properties
   const activity = useMemo(() => {
