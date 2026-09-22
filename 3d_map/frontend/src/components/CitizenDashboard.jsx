@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import {
   Building2, CheckCircle2, Clock, FileText, ArrowRight, Activity, MapPin, Search,
   ShieldCheck, Printer, AlertTriangle, Copy, Check, ExternalLink, HelpCircle,
-  ChevronDown, ChevronUp, FileCheck, Layers, Hash, Sparkles, X, PlusCircle
+  ChevronDown, ChevronUp, FileCheck, Layers, Hash, Sparkles, X, PlusCircle,
+  Volume2, Globe2
 } from 'lucide-react'
 import { citizenProperties, peekUnits, demoBaseUlpin, digipin, generateUnits } from '../api.js'
 import { activityLog, complaints, addComplaint, getUnit } from '../mockData.js'
@@ -255,6 +256,15 @@ export default function CitizenDashboard({ session, onOpenMap }) {
         ]
   }, [portfolio])
 
+  const [activeLang, setActiveLang] = useState('English')
+
+  const speakText = (text) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text)
+      window.speechSynthesis.speak(utterance)
+    }
+  }
+
   const actIcon = {
     verified: <CheckCircle2 size={15} className="act-ic ic-green" />,
     review: <Clock size={15} className="act-ic ic-amber" />,
@@ -361,6 +371,24 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           >
             <MapPin size={13} /> 3D City Map View
           </button>
+          <div className="relative group">
+            <button className="flex items-center gap-2 px-3 py-1.5 rounded bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors">
+              <Globe2 size={16} className="text-ink-mid" />
+              {activeLang}
+              <ChevronDown size={14} className="text-ink-mid" />
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              {['English', 'हिंदी', 'தமிழ்'].map(lang => (
+                <button
+                  key={lang}
+                  onClick={() => setActiveLang(lang)}
+                  className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${activeLang === lang ? 'font-bold text-[#4C5BD4]' : 'text-ink'}`}
+                >
+                  {lang}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -692,21 +720,30 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                           <MapPin size={11} className="unit-pin" /> {building.name || 'Building'} · Floor {u.floor ?? 2}
                         </div>
                       </div>
-                      <span
-                        className={`chip ${
-                          tone === 'verified'
-                            ? 'status-valid'
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`chip ${
+                            tone === 'verified'
+                              ? 'status-valid'
+                              : tone === 'conflict'
+                                ? 'status-conflict'
+                                : 'under-review'
+                          }`}
+                        >
+                          {tone === 'verified'
+                            ? '✓ Clear Title'
                             : tone === 'conflict'
-                              ? 'status-conflict'
-                              : 'under-review'
-                        }`}
-                      >
-                        {tone === 'verified'
-                          ? '✓ Clear Title'
-                          : tone === 'conflict'
-                            ? '⚠ Boundary Conflict'
-                            : '⋯ Under Review'}
-                      </span>
+                              ? '⚠ Boundary Conflict'
+                              : '⋯ Under Review'}
+                        </span>
+                        <button
+                          onClick={() => speakText(`Title Status: ${tone === 'verified' ? 'Clear Title' : tone === 'conflict' ? 'Boundary Conflict' : 'Under Review'}`)}
+                          className="p-1 rounded hover:bg-black/5 text-ink-mid"
+                          title="Read status aloud"
+                        >
+                          <Volume2 size={14} />
+                        </button>
+                      </div>
                     </div>
 
                     <table className="kv mt-2">
@@ -1156,6 +1193,22 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                     <CheckCircle2 size={16} /> Ticket {grievanceSubmitted} created! Redirecting to tracker…
                   </div>
                 )}
+              </div>
+
+              <div className="flex gap-2 mt-4 mb-2">
+                <button
+                  type="button"
+                  className="btn secondary flex-1 flex items-center justify-center gap-2"
+                  onClick={() => {
+                    closeModals()
+                    if (onOpenMap) {
+                      // Pan to the building and zoom in
+                      onOpenMap(selectedUnitForDispute.building_id || selectedUnitForDispute.buildingId)
+                    }
+                  }}
+                >
+                  <MapPin size={16} /> Select Disputed Area on 3D Model
+                </button>
               </div>
 
               <div className="modal-footer">
