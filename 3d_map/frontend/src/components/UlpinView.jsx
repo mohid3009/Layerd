@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
-import { getSavedBuildings, fetchUnits, generateUnits, generateFloorUnits, deleteUnits } from '../api.js'
+import { getSavedBuildings, fetchUnits, generateUnits, generateFloorUnits, deleteUnits, saveBuildingFeature } from '../api.js'
 import BuildingsMap from './BuildingsMap.jsx'
 
 const FH = 3          // storey height used by the generator (m)
@@ -87,15 +87,55 @@ export default function UlpinView({ session }) {
 
   const selected = buildings.find((b) => b.properties.building_id === selId) || null
 
+  // Load the building's 3D slices + generated ULPIN units when selected
+  useEffect(() => {
+    setUnits([])
+    setSelUlpin(null)
+    setFloorPlanFile(null)
+    setBusy(false)
+    setErr(null)
+    setMsg(null)
+    if (selId) {
+      setBusy(true)
+      fetchUnits(selId)
+        .then((r) => setUnits(r.units || r || []))
+        .catch((e) => setErr(e.message))
+        .finally(() => setBusy(false))
+    }
+  }, [selId])
+
+  const importOvertureBuilding = async (feature) => {
+    // We synthesize a local ID and save it via the API
+    const id = feature.id || feature.properties?.id || `ovt-${Math.random().toString(36).slice(2, 10)}`
+    
+    // Overture PMTiles features are vector tile features; we convert to GeoJSON
+    const geojson = {
+      type: 'Feature',
+      geometry: feature.geometry,
+      properties: {
+        ...feature.properties,
+        building_id: id,
+        height_m: feature.properties.height || 6,
+        color: '#FF8A00'
+      }
+    }
+    
+    setBusy(true)
+    try {
+      await saveBuildingFeature(geojson)
+      const fc = await getSavedBuildings()
+      setBuildings(fc.features)
+      setSelId(id)
+    } catch (e) {
+      setErr(`Failed to import building: ${e.message}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const selectBuilding = (bid) => {
     setSelId(bid)
     setSelUlpin(null)
-    setUnits([])
-    setMsg(null)
-    setErr(null)
-    fetchUnits(bid)
-      .then((r) => setUnits(r.units || []))
-      .catch(() => setUnits([]))
   }
 
   // deep link (/ulpin?building=<id>): select and open that building
@@ -196,6 +236,7 @@ export default function UlpinView({ session }) {
           features={buildings}
           selectedId={selId}
           onSelect={(bid) => selectBuilding(bid)}
+          onOvertureSelect={importOvertureBuilding}
         />
         {!selId && (
           <div className="map-note muted tiny">
@@ -432,6 +473,8 @@ export default function UlpinView({ session }) {
             
             {canManage && (
               <div style={{ marginTop: 12 }}>
+                {msg && <p className="all-clear tiny" style={{ marginBottom: 8 }}>{msg}</p>}
+                {err && <div className="error mono tiny" style={{ marginBottom: 8 }}>{err}</div>}
                 <p className="muted tiny" style={{ marginBottom: 4 }}>override this floor's segmentation</p>
                 <input 
                   type="file" 

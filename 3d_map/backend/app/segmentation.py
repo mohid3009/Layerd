@@ -89,97 +89,6 @@ def _yolo_units(image_bytes, max_units=10):
             conf = float(b.conf[0]) if b.conf is not None else 0.8
             x0, y0, x1, y1 = [float(v) for v in b.xyxy[0]]
             if (x1 - x0) * (y1 - y0) < min_area:
-"""
-Floor-plan segmentation.
-
-Primary: YOLOv11 segmentation (ultralytics) on an uploaded floor plan image —
-weights are bundled at `3d_map/yolo-v11-wt/yolo11n-seg.pt` (override with the
-YOLO_WEIGHTS env var; auto-download as a last resort). Requires `ultralytics`.
-
-Fallback: a randomly generated floor plan — the floor plate is subdivided by
-recursive splitting into plausible unit cells. Used when no image is uploaded,
-or when ultralytics/torch is unavailable or inference fails. Every unit rect is
-in normalized 0..1 floor-plan coordinates (x0, y0, x1, y1).
-"""
-import hashlib
-import os
-
-import numpy as np
-
-_MODEL = None
-
-
-def yolo_available():
-    try:
-        import ultralytics  # noqa: F401
-        return True
-    except Exception:
-        return False
-
-
-_BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 3d_map/
-
-_WEIGHTS_CANDIDATES = (
-    # weights shipped with the repo (3d_map/yolo-v11-wt/yolo11n-seg.pt)
-    os.path.join(_BASE, "yolo-v11-wt", "yolo11n-seg.pt"),
-    os.path.join(_BASE, "backend", "yolo11n-seg.pt"),
-    os.path.join("yolo-v11-wt", "yolo11n-seg.pt"),  # relative to the CWD
-    "yolo11n-seg.pt",  # CWD / ultralytics auto-download as last resort
-)
-
-
-def _weights_path():
-    env = os.environ.get("YOLO_WEIGHTS")
-    if env:
-        return env
-    for cand in _WEIGHTS_CANDIDATES:
-        if os.path.isfile(cand):
-            return cand
-    return _WEIGHTS_CANDIDATES[-1]  # let ultralytics auto-download
-
-
-def _get_model():
-    global _MODEL
-    if _MODEL is not None:
-        return _MODEL
-    from ultralytics import YOLO
-
-    _MODEL = YOLO(_weights_path())
-    return _MODEL
-
-
-def _yolo_units(image_bytes, max_units=10):
-    """Run YOLOv11-seg; return normalized unit rects [(x0, y0, x1, y1), ...]."""
-    import cv2
-
-    model = _get_model()
-    img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
-    if img is None:
-        raise ValueError("unreadable image")
-    h, w = img.shape[:2]
-    min_area = 0.012 * w * h
-    res = model(img, conf=0.35, verbose=False)[0]
-
-    out = []
-    if res.masks is not None and res.boxes is not None:
-        for i, m in enumerate(res.masks.data):  # (n, mh, mw) float 0..1
-            conf = float(res.boxes[i].conf[0]) if res.boxes[i].conf is not None else 0.8
-            mask = (m.cpu().numpy() * 255).astype(np.uint8)
-            mask = cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST)
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            if not contours:
-                continue
-            c = max(contours, key=cv2.contourArea)
-            if cv2.contourArea(c) < min_area:
-                continue
-            x, y, cw, ch = cv2.boundingRect(c)
-            out.append((x / w, y / h, (x + cw) / w, (y + ch) / h, conf))
-    if not out and res.boxes is not None:
-        # fall back to detection boxes when the model produced no masks
-        for b in res.boxes:
-            conf = float(b.conf[0]) if b.conf is not None else 0.8
-            x0, y0, x1, y1 = [float(v) for v in b.xyxy[0]]
-            if (x1 - x0) * (y1 - y0) < min_area:
                 continue
             out.append((x0 / w, y0 / h, x1 / w, y1 / h, conf))
     out.sort(key=lambda r: (r[2] - r[0]) * (r[3] - r[1]), reverse=True)
@@ -225,6 +134,11 @@ def segment_floorplan(image_bytes=None, n_units=None, seed=None):
             rects = _yolo_units(image_bytes)
             if len(rects) >= 2:
                 return {"source": "yolo", "rects": rects}
-        except Exception:
+            else:
+                print(f"YOLO segmentation failed: found {len(rects)} rects, need at least 2")
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"YOLO segmentation exception: {e}")
             pass  # ultralytics missing / weights unavailable / bad image → fallback
     return {"source": "random", "rects": random_units(n_units or 6, seed or 0)}

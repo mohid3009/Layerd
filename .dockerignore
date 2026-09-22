@@ -1,0 +1,9 @@
+node_modules
+3d_map/frontend/node_modules
+3d_map/frontend/dist
+__pycache__
+*.pyc
+.git
+.env
+.pytest_cache
+data/

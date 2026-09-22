@@ -9,16 +9,112 @@ WGS84 before persisting). `save_buildings(fc)` upserts by building_id;
 `save_buildings(fc, reconcile=True)` additionally deletes rows missing from
 the payload — used when the user edits the generated set manually so the
 table mirrors the working set exactly.
+
+When PostgreSQL is unavailable (local dev without Docker), a JSON-file
+fallback store is used automatically — no configuration needed.
 """
 
 import json
 import os
+import threading
 from contextlib import contextmanager
 
-import psycopg2
-import psycopg2.extras
+try:
+    import psycopg2
+    import psycopg2.extras
+    _PSYCOPG2_AVAILABLE = True
+except ImportError:
+    _PSYCOPG2_AVAILABLE = False
 
 DSN = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_DSN", "postgresql://postgres:postgres@localhost:5432/layerd")
+
+# ── JSON file fallback store ──────────────────────────────────────────────────
+# Used automatically when PostgreSQL is unreachable.
+_FALLBACK_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+_BUILDINGS_FILE = os.path.join(_FALLBACK_DIR, "buildings.json")
+_UNITS_FILE = os.path.join(_FALLBACK_DIR, "units.json")
+_fb_lock = threading.Lock()
+
+def _fb_ensure_dir():
+    os.makedirs(_FALLBACK_DIR, exist_ok=True)
+
+def _fb_load(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _fb_save(path, data):
+    _fb_ensure_dir()
+    with open(path, "w") as f:
+        json.dump(data, f)
+
+def _fb_fetch_buildings():
+    data = _fb_load(_BUILDINGS_FILE)
+    return {
+        "type": "FeatureCollection",
+        "features": list(data.values()),
+    }
+
+def _fb_save_buildings(fc, session_id, label=None, reconcile=False):
+    with _fb_lock:
+        data = _fb_load(_BUILDINGS_FILE)
+        incoming_ids = set()
+        for feat in fc.get("features", []):
+            p = feat.get("properties") or {}
+            bid = p.get("building_id")
+            if not bid:
+                continue
+            incoming_ids.add(bid)
+            feat["properties"]["session_id"] = session_id
+            data[bid] = feat
+        if reconcile:
+            for k in list(data.keys()):
+                if data[k].get("properties", {}).get("session_id") == session_id and k not in incoming_ids:
+                    del data[k]
+        _fb_save(_BUILDINGS_FILE, data)
+    return len(incoming_ids)
+
+def _fb_fetch_units(building_id):
+    data = _fb_load(_UNITS_FILE)
+    return data.get(building_id, [])
+
+def _fb_save_units(units):
+    with _fb_lock:
+        data = _fb_load(_UNITS_FILE)
+        for u in units:
+            bid = u.get("building_id")
+            if not bid:
+                continue
+            if bid not in data:
+                data[bid] = []
+            existing = {x["unit_ulpin"]: i for i, x in enumerate(data[bid])}
+            ulp = u.get("unit_ulpin")
+            if ulp in existing:
+                data[bid][existing[ulp]] = u
+            else:
+                data[bid].append(u)
+        _fb_save(_UNITS_FILE, data)
+
+def _fb_delete_units(building_id):
+    with _fb_lock:
+        data = _fb_load(_UNITS_FILE)
+        count = len(data.pop(building_id, []))
+        _fb_save(_UNITS_FILE, data)
+    return count
+
+def _fb_save_floor_units(building_id, floor_index, units):
+    with _fb_lock:
+        data = _fb_load(_UNITS_FILE)
+        existing = [u for u in data.get(building_id, []) if u.get("floor_index") != floor_index]
+        data[building_id] = existing + list(units)
+        _fb_save(_UNITS_FILE, data)
+    return len(units)
+
+# ─────────────────────────────────────────────────────────────────────────────
+
+
 
 SCHEMA = """
 CREATE EXTENSION IF NOT EXISTS postgis;
@@ -108,6 +204,9 @@ INSERT INTO lidar_sessions (session_id, label)
 SELECT DISTINCT session_id, 'Imported scan'
 FROM lidar_buildings WHERE session_id IS NOT NULL
 ON CONFLICT (session_id) DO NOTHING;
+ALTER TABLE ulpin_units ADD COLUMN IF NOT EXISTS confidence DOUBLE PRECISION;
+ALTER TABLE ulpin_units ADD COLUMN IF NOT EXISTS evidence TEXT;
+ALTER TABLE ulpin_units ADD COLUMN IF NOT EXISTS validation_status TEXT DEFAULT 'valid';
 """
 
 
@@ -152,7 +251,22 @@ def ensure_init():
 
 
 def is_available():
+    if not _PSYCOPG2_AVAILABLE:
+        return False
     ensure_init()
+    try:
+        with _conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        return True
+    except Exception:
+        return False
+
+
+def _pg_up():
+    """Quick check: is PostgreSQL reachable right now?"""
+    if not _PSYCOPG2_AVAILABLE:
+        return False
     try:
         with _conn() as conn:
             with conn.cursor() as cur:
@@ -213,6 +327,8 @@ ON CONFLICT (building_id) DO UPDATE SET
 
 def save_session(session_id, label=None, mode=None, crs=None):
     """Register/refresh a scan session row."""
+    if not _pg_up():
+        return  # no-op in fallback mode
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
@@ -275,6 +391,8 @@ def save_buildings(featurecollection, session_id, label=None, mode=None, crs=Non
     """
     if not session_id:
         raise ValueError("session_id is required")
+    if not _pg_up():
+        return _fb_save_buildings(featurecollection, session_id, label=label, reconcile=reconcile)
     ensure_init()
     features = featurecollection.get("features", [])
     save_session(session_id, label=label, mode=mode, crs=crs)
@@ -307,6 +425,8 @@ def save_buildings(featurecollection, session_id, label=None, mode=None, crs=Non
 
 def fetch_buildings(session_id=None):
     """Saved buildings as a GeoJSON FeatureCollection (WGS84), all sessions or one."""
+    if not _pg_up():
+        return _fb_fetch_buildings()
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
@@ -375,6 +495,8 @@ def delete_session(session_id):
 
 
 def count_buildings():
+    if not _pg_up():
+        return len(_fb_load(_BUILDINGS_FILE))
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
@@ -393,6 +515,11 @@ def clear_buildings():
 
 def save_units(building_id, units):
     """Replace the full unit tree of one building; returns the saved count."""
+    if not _pg_up():
+        for u in units:
+            u["building_id"] = building_id
+        _fb_save_units(units)
+        return len(units)
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
@@ -428,6 +555,8 @@ def save_units(building_id, units):
 
 def fetch_units(building_id):
     """All ULPIN units of one building, ordered floor then unit number."""
+    if not _pg_up():
+        return _fb_fetch_units(building_id)
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
@@ -453,6 +582,8 @@ def fetch_units(building_id):
 
 def delete_units(building_id):
     """Remove the whole unit tree of one building; returns removed count."""
+    if not _pg_up():
+        return _fb_delete_units(building_id)
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
@@ -501,6 +632,8 @@ def confirm_unit_edit(edit_id, status):
 
 def save_floor_units(building_id, floor_index, units):
     """Replace the units of a single floor in a building; returns the saved count."""
+    if not _pg_up():
+        return _fb_save_floor_units(building_id, floor_index, units)
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:

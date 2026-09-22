@@ -5297,3 +5297,7 @@ body.modal-scroll-lock { overflow: hidden; }
 .panel-section[class*='acc-'] h3::before {
   display: none !important;
 }
+
+.sidebar > .panel-section {
+  flex-shrink: 0;
+}

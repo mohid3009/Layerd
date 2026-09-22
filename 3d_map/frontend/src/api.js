@@ -856,3 +856,18 @@ export const rejectUnitCorrection = async (editId, registrarSession, reason = ''
   return { ok: true }
 }
 
+export const saveBuildingFeature = async (feature) => {
+  // Give it a session_id so the backend accepts it via the /update endpoint
+  if (!feature.properties.session_id) {
+    feature.properties.session_id = 'overture_import'
+  }
+  const fc = { type: 'FeatureCollection', features: [feature] }
+  const res = await fetch('/lidar/buildings/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ buildings: fc, session_id: 'overture_import' })
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+

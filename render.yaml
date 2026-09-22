@@ -1,12 +1,10 @@
 services:
   - type: web
     name: sih11-demo-backend
-    env: python
+    env: docker
     region: singapore # Adjust if needed
-    buildCommand: "cd 3d_map/backend && chmod +x build.sh && ./build.sh"
-    startCommand: "cd 3d_map/backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.1
+      - key: PYTHONUNBUFFERED
+        value: "1"
       # Note: Render automatically provides DATABASE_URL if you attach a Postgres DB to this service.
-      # Or you can manually add DATABASE_URL or POSTGRES_DSN in the Render dashboard.
+      # Without it, the backend will safely fallback to the local JSON file database.

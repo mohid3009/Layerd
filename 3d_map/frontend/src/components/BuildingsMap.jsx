@@ -1,9 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Map as MapLibreMap, NavigationControl, Marker } from 'maplibre-gl'
+import { Map as MapLibreMap, NavigationControl, Marker, addProtocol } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import * as pmtiles from 'pmtiles'
 import { peekUnits, demoBaseUlpin, demoOwner, digipin } from '../api.js'
 import { floorSlices, shadowFeatures, unitSliceFeatures } from '../floors.js'
 import { TIME_LIGHTING_PRESETS } from '../constants.js'
+
+let pmtilesRegistered = false
+if (!pmtilesRegistered) {
+  const protocol = new pmtiles.Protocol()
+  addProtocol('pmtiles', protocol.tile)
+  pmtilesRegistered = true
+}
 
 // Keyless tile providers (no {r} placeholder — MapLibre does not expand it).
 const TILES = {
@@ -55,6 +63,7 @@ export default function BuildingsMap({
   ownedIds = null, // citizen view: building_ids the signed-in citizen owns
   floorGap = 1.2, // explosion gap between floor slices (m), default 1.2m
   onFloorGapChange = null,
+  onOvertureSelect = null,
 }) {
   const [tileStyle, setTileStyle] = useState('satellite')
   const [timeOfDay, setTimeOfDay] = useState('noon')
@@ -121,6 +130,10 @@ export default function BuildingsMap({
           buildings: { type: 'geojson', data: EMPTY_FC },
           shadows: { type: 'geojson', data: EMPTY_FC }, // ground cast-shadows
           draft: { type: 'geojson', data: EMPTY_FC }, // free-draw preview
+          'overture-buildings': {
+            type: 'vector',
+            url: 'pmtiles://https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/2026-08-19.0/buildings.pmtiles'
+          },
         },
         layers: [
           ...Object.keys(TILES).map((key, i) => ({
@@ -137,6 +150,13 @@ export default function BuildingsMap({
             } },
           { id: 'bldg-flat', type: 'fill', source: 'buildings',
             paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.12 } },
+          { id: 'overture-bldg-extrude', type: 'fill-extrusion', source: 'overture-buildings', 'source-layer': 'building',
+            paint: {
+              'fill-extrusion-color': '#77777C',
+              'fill-extrusion-height': ['coalesce', ['get', 'height'], 6],
+              'fill-extrusion-opacity': 0.35,
+              'fill-extrusion-vertical-gradient': true,
+            } },
           { id: 'bldg-extrude', type: 'fill-extrusion', source: 'buildings',
             paint: {
               'fill-extrusion-color': ['get', 'color'],
@@ -192,6 +212,16 @@ export default function BuildingsMap({
     })
     map.on('mouseenter', 'bldg-extrude', () => (map.getCanvas().style.cursor = 'pointer'))
     map.on('mouseleave', 'bldg-extrude', () => (map.getCanvas().style.cursor = ''))
+    
+    map.on('click', 'overture-bldg-extrude', (e) => {
+      if (drawModeRef.current || !onOvertureSelect || !e.features?.length) return
+      // Ignore click if it also hit an existing building (handled by bldg-extrude)
+      const hits = map.queryRenderedFeatures(e.point, { layers: ['bldg-extrude'] })
+      if (hits.length) return
+      onOvertureSelect(e.features[0])
+    })
+    map.on('mouseenter', 'overture-bldg-extrude', () => (map.getCanvas().style.cursor = 'pointer'))
+    map.on('mouseleave', 'overture-bldg-extrude', () => (map.getCanvas().style.cursor = ''))
 
     // ── unit hover tooltip: floor-level 3D ULPIN · DIGIPIN · owner ──────────
     const tip = document.createElement('div')
