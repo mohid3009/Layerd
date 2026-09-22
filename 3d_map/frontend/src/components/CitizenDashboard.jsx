@@ -343,7 +343,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             onClick={() => setView('properties')}
             aria-pressed={view === 'properties'}
           >
-            <Building2 size={14} /> My Properties ({portfolio.units.length})
+            <Building2 size={14} /> My Properties ({rows.length})
           </button>
           <button
             className={`view-tab ${view === 'grievances' ? 'active' : ''}`}
@@ -412,6 +412,11 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           <div className="citizen-banner">
             <div className="cb-circle c1" />
             <div className="cb-circle c2" />
+            {needsAttention && (
+              <div className="absolute top-3 right-3 flex items-center gap-2 bg-red-500/20 border border-red-400/30 text-white text-xs px-3 py-1.5 rounded-full font-semibold">
+                <AlertTriangle size={13} /> {totals.conflicts} unit{totals.conflicts !== 1 ? 's' : ''} need attention
+              </div>
+            )}
             <div className="cb-content">
               <div className="cb-eyebrow flex items-center gap-2">
                 <span>{greeting} · National Urban 3D Cadastre</span>
@@ -419,7 +424,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   <ShieldCheck size={11} className="text-[#34D399]" /> Aadhaar Linked
                 </span>
               </div>
-              <div className="cb-title">Welcome, {session?.name || 'Citizen'}</div>
+              <div className="cb-title">Welcome, {session?.name?.split(' ')[0] || 'Citizen'}</div>
               <div className="cb-sub">
                 Your portfolio holds <b>{totals.count} registered property parcel{totals.count !== 1 ? 's' : ''}</b> in Chennai with{' '}
                 <b>{totals.units} volumetric unit{totals.units !== 1 ? 's' : ''}</b> mapped in 3D.{' '}
@@ -557,6 +562,32 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                 </div>
                 <div className="qs-action">Inspect Hash Chain →</div>
               </div>
+            </div>
+          </div>
+
+          {/* ── Real-Time Unit Change Notifications ── */}
+          <div className="panel-section welcome-card mb-0">
+            <h3 className="flex items-center gap-2 justify-between">
+              <span className="flex items-center gap-2">
+                <Activity size={15} className="text-[#4C5BD4]" />
+                Unit Change Notifications
+              </span>
+              <span className="text-xs font-normal text-ink-mid bg-[#4C5BD4]/10 text-[#4C5BD4] px-2 py-0.5 rounded-full">Live</span>
+            </h3>
+            <div className="mt-3 space-y-2">
+              {[
+                { icon: <CheckCircle2 size={15} className="text-emerald-500 shrink-0 mt-0.5" />, title: 'Flat 302 title verified', sub: 'Registrar Arun Krishnan approved the 3D boundary update · 2 Sep 2026', tone: 'ok' },
+                { icon: <Clock size={15} className="text-amber-500 shrink-0 mt-0.5" />, title: 'Flat 201 area mismatch under review', sub: 'Surveyor Priya Venkatesan assigned · Response due 29 Sep 2026', tone: 'warn' },
+                { icon: <ShieldCheck size={15} className="text-[#4C5BD4] shrink-0 mt-0.5" />, title: 'SHA-256 audit entry created', sub: 'New hash-chained record appended for Flat 203, Lakeview Residency · 27 Aug 2026', tone: 'info' },
+              ].map((n, i) => (
+                <div key={i} className={`flex gap-3 p-3 rounded-lg border text-sm ${n.tone === 'ok' ? 'bg-emerald-50 border-emerald-100' : n.tone === 'warn' ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'}`}>
+                  {n.icon}
+                  <div>
+                    <div className="font-semibold text-[#1C2530]">{n.title}</div>
+                    <div className="text-xs text-ink-mid mt-0.5">{n.sub}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
