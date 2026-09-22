@@ -34,6 +34,33 @@ const i18n = {
   'Download Certificate →': { 'हिंदी': 'प्रमाणपत्र डाउनलोड करें →', 'தமிழ்': 'சான்றிதழைப் பதிவிறக்குக →' },
   'Track & File Issue →': { 'हिंदी': 'समस्या ट्रैक और दर्ज करें →', 'தமிழ்': 'சிக்கலைக் கண்காணிக்கவும் & பதிவு செய்யவும் →' },
   'Inspect Hash Chain →': { 'हिंदी': 'हैश चेन का निरीक्षण करें →', 'தமிழ்': 'ஹாஷ் சங்கிலியை ஆய்வு செய்க →' },
+  'No registered properties yet': { 'हिंदी': 'अभी तक कोई पंजीकृत संपत्ति नहीं', 'தமிழ்': 'இன்னும் பதிவு செய்யப்பட்ட சொத்துக்கள் இல்லை' },
+  'When a property is registered against your Aadhaar-linked account, its 3D volumetric title record will appear here automatically.': { 'हिंदी': 'जब कोई संपत्ति आपके आधार से जुड़े खाते में पंजीकृत होती है, तो उसका 3D वोल्यूमेट्रिक शीर्षक रिकॉर्ड स्वचालित रूप से यहां दिखाई देगा।', 'தமிழ்': 'உங்கள் ஆதார் இணைக்கப்பட்ட கணக்கில் ஒரு சொத்து பதிவு செய்யப்படும்போது, அதன் 3D தலைப்பு பதிவு தானாகவே இங்கே தோன்றும்.' },
+  'Explore the 3D City Map': { 'हिंदी': '3D सिटी मैप एक्सप्लोर करें', 'தமிழ்': '3D நகர வரைபடத்தை ஆராயுங்கள்' },
+  'No properties matched your search': { 'हिंदी': 'आपकी खोज से कोई संपत्ति मेल नहीं खाती', 'தமிழ்': 'உங்கள் தேடலுடன் எந்த சொத்துக்களும் பொருந்தவில்லை' },
+  'Try a different apartment number, building name or ULPIN key.': { 'हिंदी': 'एक अलग अपार्टमेंट नंबर, भवन का नाम या ULPIN कुंजी आज़माएं।', 'தமிழ்': 'வேறு அபார்ட்மெண்ட் எண், கட்டிடத்தின் பெயர் அல்லது ULPIN விசையை முயற்சிக்கவும்.' },
+  'Reset Search & Filters': { 'हिंदी': 'खोज और फ़िल्टर रीसेट करें', 'தமிழ்': 'தேடல் மற்றும் வடிப்பான்களை மீட்டமைக்கவும்' },
+  'All Properties': { 'हिंदी': 'सभी संपत्तियां', 'தமிழ்': 'அனைத்து சொத்துக்கள்' },
+  '✓ Clear Title': { 'हिंदी': '✓ स्पष्ट स्वामित्व', 'தமிழ்': '✓ தெளிவான தலைப்பு' },
+  'In Review': { 'हिंदी': 'समीक्षा में', 'தமிழ்': 'மதிப்பாய்வில்' },
+  'Carpet Area': { 'हिंदी': 'कारपेट क्षेत्र', 'தமிழ்': 'கம்பளப் பகுதி' },
+  'Registered Owner': { 'हिंदी': 'पंजीकृत स्वामी', 'தமிழ்': 'பதிவு செய்யப்பட்ட உரிமையாளர்' },
+  'National 3D ULPIN': { 'हिंदी': 'राष्ट्रीय 3D ULPIN', 'தமிழ்': 'தேசிய 3D ULPIN' },
+  'Encumbrance (NOC)': { 'हिंदी': 'भार (NOC)', 'தமிழ்': 'என்கம்பரன்ஸ் (NOC)' },
+  'Nil / Clear Title': { 'हिंदी': 'शून्य / स्पष्ट स्वामित्व', 'தமிழ்': 'பூஜ்ஜியம் / தெளிவான தலைப்பு' },
+  'Passport': { 'हिंदी': 'पासपोर्ट', 'தமிழ்': 'பாஸ்போர்ட்' },
+  'Certificate': { 'हिंदी': 'प्रमाणपत्र', 'தமிழ்': 'சான்றிதழ்' },
+  'Ledger': { 'हिंदी': 'खाता बही', 'தமிழ்': 'லெட்ஜர்' },
+  'Report': { 'हिंदी': 'रिपोर्ट', 'தமிழ்': 'அறிக்கை' },
+  'Map': { 'हिंदी': 'नक्शा', 'தமிழ்': 'வரைபடம்' },
+  'File New Grievance': { 'हिंदी': 'नई शिकायत दर्ज करें', 'தமிழ்': 'புதிய குறையை பதிவு செய்யவும்' },
+  'Tracked Tickets': { 'हिंदी': 'ट्रैक किए गए टिकट', 'தமிழ்': 'கண்காணிக்கப்படும் டிக்கெட்டுகள்' },
+  'No grievances on record': { 'हिंदी': 'रिकॉर्ड पर कोई शिकायत नहीं', 'தமிழ்': 'பதிவில் எந்த குறைகளும் இல்லை' },
+  'No complaints or disputes have been filed for your properties. Flag an issue and track its resolution from here.': { 'हिंदी': 'आपकी संपत्तियों के लिए कोई शिकायत या विवाद दर्ज नहीं किया गया है। यहां से एक समस्या को फ़्लैग करें और इसके समाधान को ट्रैक करें।', 'தமிழ்': 'உங்கள் சொத்துக்களுக்கு எந்த புகாரும் அல்லது தகராறும் பதிவு செய்யப்படவில்லை. இங்கிருந்து ஒரு சிக்கலைக் கொடியிட்டு அதன் தீர்மானத்தைக் கண்காணிக்கவும்.' },
+  'File a Grievance': { 'हिंदी': 'शिकायत दर्ज करें', 'தமிழ்': 'குறையை பதிவு செய்யவும்' },
+  'Select Disputed Area on 3D Model': { 'हिंदी': '3D मॉडल पर विवादित क्षेत्र चुनें', 'தமிழ்': '3D மாதிரியில் சர்ச்சைக்குரிய பகுதியைத் தேர்ந்தெடுக்கவும்' },
+  'Cancel': { 'हिंदी': 'रद्द करें', 'தமிழ்': 'ரத்துசெய்' },
+  'Submit Official Report': { 'हिंदी': 'आधिकारिक रिपोर्ट सबमिट करें', 'தமிழ்': 'அதிகாரப்பூர்வ அறிக்கையைச் சமர்ப்பிக்கவும்' },
 }
 
 export default function CitizenDashboard({ session, onOpenMap }) {
@@ -717,19 +744,19 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                 className={`filter-pill ${statusFilter === 'all' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('all')}
               >
-                All Properties ({portfolio.units.length})
+                {t('All Properties')} ({portfolio.units.length})
               </button>
               <button
                 className={`filter-pill ${statusFilter === 'verified' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('verified')}
               >
-                ✓ Clear Title ({portfolio.units.filter((x) => x.tone === 'verified').length})
+                {t('✓ Clear Title')} ({portfolio.units.filter((x) => x.tone === 'verified').length})
               </button>
               <button
                 className={`filter-pill ${statusFilter === 'review' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('review')}
               >
-                In Review ({portfolio.units.filter((x) => x.tone !== 'verified').length})
+                {t('In Review')} ({portfolio.units.filter((x) => x.tone !== 'verified').length})
               </button>
             </div>
 
@@ -744,30 +771,29 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             portfolio.units.length === 0 ? (
               <div className="cb-empty">
                 <Building2 size={26} className="cb-empty-icon" />
-                <p className="text-sm font-bold text-ink">No registered properties yet</p>
+                <p className="text-sm font-bold text-ink">{t('No registered properties yet')}</p>
                 <p className="muted tiny mt-1 max-w-[420px]">
-                  When a property is registered against your Aadhaar-linked account, its 3D
-                  volumetric title record will appear here automatically.
+                  {t('When a property is registered against your Aadhaar-linked account, its 3D volumetric title record will appear here automatically.')}
                 </p>
                 <button
                   className="btn tiny mt-3 inline-flex items-center gap-1.5"
                   onClick={() => onOpenMap(null)}
                 >
-                  <MapPin size={13} /> Explore the 3D City Map
+                  <MapPin size={13} /> {t('Explore the 3D City Map')}
                 </button>
               </div>
             ) : (
               <div className="cb-empty">
                 <Search size={26} className="cb-empty-icon" />
-                <p className="text-sm font-bold text-ink">No properties matched your search</p>
+                <p className="text-sm font-bold text-ink">{t('No properties matched your search')}</p>
                 <p className="muted tiny mt-1">
-                  Try a different apartment number, building name or ULPIN key.
+                  {t('Try a different apartment number, building name or ULPIN key.')}
                 </p>
                 <button
                   className="btn tiny mt-3"
                   onClick={() => { setQuery(''); setStatusFilter('all'); }}
                 >
-                  Reset Search &amp; Filters
+                  {t('Reset Search & Filters')}
                 </button>
               </div>
             )
@@ -819,7 +845,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                     <table className="kv mt-2">
                       <tbody>
                         <tr>
-                          <td>Carpet Area</td>
+                          <td>{t('Carpet Area')}</td>
                           <td>
                             <b>{u.area_sqm || u.area || 82} m²</b>
                             <span className="muted tiny ml-1">
@@ -828,11 +854,11 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                           </td>
                         </tr>
                         <tr>
-                          <td>Registered Owner</td>
+                          <td>{t('Registered Owner')}</td>
                           <td>{owner}</td>
                         </tr>
                         <tr>
-                          <td>National 3D ULPIN</td>
+                          <td>{t('National 3D ULPIN')}</td>
                           <td>
                             <div className="flex items-center justify-between gap-1">
                               <span className="mono tiny truncate max-w-[200px]" title={displayUlpin}>
@@ -849,9 +875,9 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                           </td>
                         </tr>
                         <tr>
-                          <td>Encumbrance (NOC)</td>
+                          <td>{t('Encumbrance (NOC)')}</td>
                           <td>
-                            <span className="text-[#1B7A4A] font-semibold text-xs">Nil / Clear Title</span>
+                            <span className="text-[#1B7A4A] font-semibold text-xs">{t('Nil / Clear Title')}</span>
                           </td>
                         </tr>
                       </tbody>
@@ -864,7 +890,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                         onClick={() => navigate(`/passport/${unitId}`)}
                         title="View complete Digital Property Passport"
                       >
-                        <ShieldCheck size={13} /> Passport
+                        <ShieldCheck size={13} /> {t('Passport')}
                       </button>
 
                       <button
@@ -872,7 +898,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                         onClick={() => setSelectedUnitForCert(u)}
                         title="Download or print official Certificate of Ownership"
                       >
-                        <Printer size={13} /> Certificate
+                        <Printer size={13} /> {t('Certificate')}
                       </button>
 
                       <button
@@ -880,7 +906,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                         onClick={() => setSelectedUnitForLedger(u)}
                         title="Inspect blockchain audit chain"
                       >
-                        <Hash size={13} /> Ledger
+                        <Hash size={13} /> {t('Ledger')}
                       </button>
 
                       <button
@@ -891,7 +917,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                         }}
                         title="Report boundary or area discrepancy"
                       >
-                        <AlertTriangle size={13} /> Report
+                        <AlertTriangle size={13} /> {t('Report')}
                       </button>
 
                       <button
@@ -899,7 +925,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                         onClick={() => onOpenMap(building.building_id || building.id)}
                         title="Show on 3D Map"
                       >
-                        <MapPin size={13} /> Map
+                        <MapPin size={13} /> {t('Map')}
                       </button>
                     </div>
                   </div>
@@ -916,7 +942,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           <div className="bg-white border border-[#E4E7EC] rounded-[14px] p-6 shadow-sm">
             <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
               <div>
-                <h2 className="text-lg font-bold text-ink">Grievances &amp; Dispute Desk</h2>
+                <h2 className="text-lg font-bold text-ink">{t('Grievances & Disputes')}</h2>
                 <p className="text-xs text-ink-mid mt-0.5">
                   Report discrepancies in registered area, floor index, or volumetric boundaries to the District Registrar.
                 </p>
@@ -928,22 +954,21 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   setSelectedUnitForDispute(portfolio.units[0]?.u || { unit_ulpin: 'unit-2' })
                 }}
               >
-                <PlusCircle size={14} /> File New Grievance
+                <PlusCircle size={14} /> {t('File New Grievance')}
               </button>
             </div>
 
             {/* Complaints List */}
             <div className="space-y-3 mt-4">
               <h3 className="text-xs uppercase font-bold text-ink-mid tracking-wider">
-                Tracked Tickets ({citizenComplaints.length})
+                {t('Tracked Tickets')} ({citizenComplaints.length})
               </h3>
               {citizenComplaints.length === 0 ? (
                 <div className="cb-empty cb-empty-sm">
                   <CheckCircle2 size={26} className="cb-empty-icon" />
-                  <p className="text-sm font-bold text-ink">No grievances on record</p>
+                  <p className="text-sm font-bold text-ink">{t('No grievances on record')}</p>
                   <p className="muted tiny mt-1">
-                    No complaints or disputes have been filed for your properties. Flag an
-                    issue and track its resolution from here.
+                    {t('No complaints or disputes have been filed for your properties. Flag an issue and track its resolution from here.')}
                   </p>
                   <button
                     className="btn tiny mt-3 inline-flex items-center gap-1.5"
@@ -952,7 +977,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                       setSelectedUnitForDispute(portfolio.units[0]?.u || { unit_ulpin: 'unit-2' })
                     }}
                   >
-                    <PlusCircle size={13} /> File a Grievance
+                    <PlusCircle size={13} /> {t('File a Grievance')}
                   </button>
                 </div>
               ) : (
@@ -1277,7 +1302,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                     }
                   }}
                 >
-                  <MapPin size={16} /> Select Disputed Area on 3D Model
+                  <MapPin size={16} /> {t('Select Disputed Area on 3D Model')}
                 </button>
               </div>
 
@@ -1287,14 +1312,14 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   className="btn"
                   onClick={() => setSelectedUnitForDispute(null)}
                 >
-                  Cancel
+                  {t('Cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={!grievanceDesc.trim() || grievanceSubmitted}
                   className="btn primary"
                 >
-                  Submit Official Report
+                  {t('Submit Official Report')}
                 </button>
               </div>
             </form>
