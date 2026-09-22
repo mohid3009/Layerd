@@ -10,6 +10,7 @@
 import { unitZRange } from './verticalGeometry.js'
 export { unitZRange } from './verticalGeometry.js'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 const MUT_KEY = 'avani-demo-mutations'
 const UNITS_KEY = 'avani-demo-units'
 
@@ -396,7 +397,7 @@ export const generateFloorUnits = async (buildingId, floorIndex, planFile) => {
   fd.append('floor_index', floorIndex)
   if (planFile) fd.append('plan', planFile)
 
-  const res = await fetch('/lidar/units/generate_floor', { method: 'POST', body: fd })
+  const res = await fetch(`${API_BASE}/lidar/units/generate_floor`, { method: 'POST', body: fd })
   if (!res.ok) throw new Error(await res.text())
   const data = await res.json()
   window.dispatchEvent(new Event('demo-units-changed'))
@@ -443,7 +444,7 @@ export const generateUnits = async (buildingId, { floors, basements, planFile })
   fd.append('basements', basements || 0)
   if (planFile) fd.append('plan', planFile)
 
-  const res = await fetch('/lidar/units/generate', { method: 'POST', body: fd })
+  const res = await fetch(`${API_BASE}/lidar/units/generate`, { method: 'POST', body: fd })
   if (!res.ok) throw new Error(await res.text())
   const data = await res.json()
   window.dispatchEvent(new Event('demo-units-changed'))
@@ -763,7 +764,7 @@ export const proposeUnitCorrection = async (buildingId, unitUlpin, patch, sessio
 // Registrar retrieves all pending unit edits
 export const getPendingUnitEdits = async () => {
   try {
-    const res = await fetch('/lidar/units/pending')
+    const res = await fetch(`${API_BASE}/lidar/units/pending`)
     if (res.ok) return await res.json()
   } catch (e) {
     console.error(e)
@@ -862,7 +863,7 @@ export const saveBuildingFeature = async (feature) => {
     feature.properties.session_id = 'overture_import'
   }
   const fc = { type: 'FeatureCollection', features: [feature] }
-  const res = await fetch('/lidar/buildings/update', {
+  const res = await fetch(`${API_BASE}/lidar/buildings/update`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ buildings: fc, session_id: 'overture_import' })
