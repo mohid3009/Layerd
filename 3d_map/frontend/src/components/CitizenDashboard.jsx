@@ -12,6 +12,17 @@ import CubeMark from './CubeMark.jsx'
 
 const M_PER_DEG = 111320
 
+const i18n = {
+  'Overview & Services': { 'हिंदी': 'अवलोकन और सेवाएं', 'தமிழ்': 'கண்ணோட்டம் மற்றும் சேவைகள்' },
+  'My Properties': { 'हिंदी': 'मेरी संपत्तियां', 'தமிழ்': 'என் சொத்துக்கள்' },
+  'Grievances & Disputes': { 'हिंदी': 'शिकायतें और विवाद', 'தமிழ்': 'குறைகள் மற்றும் தகராறுகள்' },
+  'Digital Passport': { 'हिंदी': 'डिजिटल पासपोर्ट', 'தமிழ்': 'டிஜிட்டல் பாஸ்போர்ட்' },
+  '3D City Map View': { 'हिंदी': '3D शहर का नक्शा', 'தமிழ்': '3D நகர வரைபடம்' },
+  'Welcome': { 'हिंदी': 'स्वागत है', 'தமிழ்': 'வரவேற்கிறோம்' },
+  'View My Properties': { 'हिंदी': 'मेरी संपत्तियां देखें', 'தமிழ்': 'என் சொத்துக்களைக் காண்க' },
+  'Download UPC Certificate & Deed': { 'हिंदी': 'UPC प्रमाणपत्र डाउनलोड करें', 'தமிழ்': 'UPC சான்றிதழைப் பதிவிறக்குக' },
+}
+
 export default function CitizenDashboard({ session, onOpenMap }) {
   const navigate = useNavigate()
   const [props, setProps] = useState([])
@@ -271,6 +282,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
   }, [portfolio])
 
   const [activeLang, setActiveLang] = useState('English')
+  const t = (key) => i18n[key]?.[activeLang] || key
 
   const speakText = (text) => {
     if ('speechSynthesis' in window) {
@@ -350,21 +362,21 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             onClick={() => setView('welcome')}
             aria-pressed={view === 'welcome'}
           >
-            <Activity size={14} /> Overview &amp; Services
+            <Activity size={14} /> {t('Overview & Services')}
           </button>
           <button
             className={`view-tab ${view === 'properties' ? 'active' : ''}`}
             onClick={() => setView('properties')}
             aria-pressed={view === 'properties'}
           >
-            <Building2 size={14} /> My Properties ({rows.length})
+            <Building2 size={14} /> {t('My Properties')} ({rows.length})
           </button>
           <button
             className={`view-tab ${view === 'grievances' ? 'active' : ''}`}
             onClick={() => setView('grievances')}
             aria-pressed={view === 'grievances'}
           >
-            <AlertTriangle size={14} /> Grievances &amp; Disputes
+            <AlertTriangle size={14} /> {t('Grievances & Disputes')}
           </button>
         </div>
 
@@ -377,13 +389,13 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             }}
             title="Open primary property passport"
           >
-            <ShieldCheck size={13} className="text-accent" /> Digital Passport
+            <ShieldCheck size={13} className="text-accent" /> {t('Digital Passport')}
           </button>
           <button
             className="btn primary tiny inline-flex items-center gap-1.5"
             onClick={() => onOpenMap(null)}
           >
-            <MapPin size={13} /> 3D City Map View
+            <MapPin size={13} /> {t('3D City Map View')}
           </button>
           <div className="relative group">
             <button className="flex items-center gap-2 px-3 py-1.5 rounded bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors">
@@ -438,7 +450,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   <ShieldCheck size={11} className="text-[#34D399]" /> Aadhaar Linked
                 </span>
               </div>
-              <div className="cb-title">Welcome, {session?.name?.split(' ')[0] || 'Citizen'}</div>
+              <div className="cb-title">{t('Welcome')}, {session?.name?.split(' ')[0] || 'Citizen'}</div>
               <div className="cb-sub">
                 Your portfolio holds <b>{totals.count} registered property parcel{totals.count !== 1 ? 's' : ''}</b> in Chennai with{' '}
                 <b>{totals.units} volumetric unit{totals.units !== 1 ? 's' : ''}</b> mapped in 3D.{' '}
@@ -451,7 +463,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   className="btn primary cb-cta inline-flex items-center gap-2"
                   onClick={() => setView('properties')}
                 >
-                  View My Properties <ArrowRight size={15} />
+                  {t('View My Properties')} <ArrowRight size={15} />
                 </button>
                 <button
                   className="btn cb-cta inline-flex items-center gap-2"
@@ -460,7 +472,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                     navigate(`/passport/${target}`)
                   }}
                 >
-                  <Printer size={14} /> Download UPC Certificate &amp; Deed
+                  <Printer size={14} /> {t('Download UPC Certificate & Deed')}
                 </button>
               </div>
             </div>
