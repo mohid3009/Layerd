@@ -1009,7 +1009,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                             c.status === 'resolved' ? 'status-valid' : 'under-review'
                           }`}
                         >
-                          {c.status === 'resolved' ? '{t('✓ Resolved by Registrar')}' : '{t('⋯ Under Active Review')}'}
+                          {c.status === 'resolved' ? t('✓ Resolved by Registrar') : t('⋯ Under Active Review')}
                         </span>
                         <span className="text-[11px] text-ink-mid">
                           {t('Resolution SLA: Within 7 days')}
