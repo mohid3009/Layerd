@@ -74,6 +74,9 @@ export default function CitizenDashboard({ session, onOpenMap }) {
   const [copiedId, setCopiedId] = useState(null)
   const [toast, setToast] = useState(null)
 
+  const [activeLang, setActiveLang] = useState('English')
+  const t = (key) => i18n[key]?.[activeLang] || key
+
   // Modals state
   const [selectedUnitForCert, setSelectedUnitForCert] = useState(null)
   const [selectedUnitForLedger, setSelectedUnitForLedger] = useState(null)
@@ -320,9 +323,6 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           { id: 'act-103', text: `Official UPC Certificate & Digital Deed ready for download`, date: '2026-08-15', type: 'verified' },
         ]
   }, [portfolio])
-
-  const [activeLang, setActiveLang] = useState('English')
-  const t = (key) => i18n[key]?.[activeLang] || key
 
   const speakText = (text) => {
     if ('speechSynthesis' in window) {
