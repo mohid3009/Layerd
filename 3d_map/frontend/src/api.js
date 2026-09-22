@@ -344,11 +344,38 @@ export const deleteBuilding = async (buildingId) => {
 // Demo stub — lat/lon are ignored; all scans are in Chennai.
 export const getRegion = async (_lat, _lon) => ({ country: 'India', region: 'Chennai, Tamil Nadu' })
 
-// ── citizen portfolio — deterministic demo ownership (exactly 3 buildings) ──
-export const citizenOwns = (buildingId) => stableHash(buildingId) % 1500 === 0
+// ── citizen portfolio — use mockData buildings where Citizen 1 owns a unit ──
+import { buildings as mockBuildings } from './mockData.js'
+
+// The set of building IDs where Citizen 1 has at least one unit
+const CITIZEN1_BUILDING_IDS = new Set(
+  mockBuildings
+    .filter((b) => b.units.some((u) => u.owner === 'Citizen 1'))
+    .map((b) => b.id)
+)
+
+export const citizenOwns = (buildingId) => CITIZEN1_BUILDING_IDS.has(buildingId)
+
 export const citizenProperties = async () => {
-  const fc = await applyMuts()
-  return fc.features.filter((f) => citizenOwns(f.properties.building_id))
+  // Return mock buildings as GeoJSON-like features so the dashboard renders them
+  const ownedBuildings = mockBuildings.filter((b) =>
+    b.units.some((u) => u.owner === 'Citizen 1')
+  )
+  return ownedBuildings.map((b) => ({
+    type: 'Feature',
+    geometry: { type: 'Polygon', coordinates: [[]] }, // no footprint needed for list view
+    properties: {
+      building_id: b.id,
+      name: b.name,
+      address: b.address,
+      stories: b.floors,
+      basements: b.basements,
+      height_m: b.height,
+      extraction: b.extraction,
+      // pre-populate units so peekUnits fallback works
+      _mockUnits: b.units.filter((u) => u.owner === 'Citizen 1'),
+    },
+  }))
 }
 
 // ── 3D ULPIN units — generated client-side with a quad-grid segmentation ─────

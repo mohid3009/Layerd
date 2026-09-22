@@ -142,6 +142,20 @@ export default function CitizenDashboard({ session, onOpenMap }) {
       if (!citizenUnits.length && rawUnits.length) {
         citizenUnits = rawUnits.slice(0, 1)
       }
+      // ── Fallback: if no generated 3D units, use the pre-seeded mock units ──
+      if (!citizenUnits.length && p._mockUnits?.length) {
+        citizenUnits = p._mockUnits.map((mu) => ({
+          unit_ulpin: mu.ulpin,
+          unitLabel: mu.unitLabel,
+          floor: mu.floor,
+          floor_index: mu.floor,
+          area_sqm: mu.area,
+          owner_name: mu.owner,
+          owner: mu.owner,
+          validation_status: mu.status === 'verified' ? 'verified' : 'review',
+          rights_type: mu.rightsType,
+        }))
+      }
       const units = citizenUnits.map((u) => ({
         ...u,
         owner_name: citizenName,
