@@ -21,6 +21,19 @@ const i18n = {
   'Welcome': { 'हिंदी': 'स्वागत है', 'தமிழ்': 'வரவேற்கிறோம்' },
   'View My Properties': { 'हिंदी': 'मेरी संपत्तियां देखें', 'தமிழ்': 'என் சொத்துக்களைக் காண்க' },
   'Download UPC Certificate & Deed': { 'हिंदी': 'UPC प्रमाणपत्र डाउनलोड करें', 'தமிழ்': 'UPC சான்றிதழைப் பதிவிறக்குக' },
+  'Properties Owned': { 'हिंदी': 'स्वामित्व वाली संपत्तियां', 'தமிழ்': 'சொந்தமான சொத்துக்கள்' },
+  '3D Units Mapped': { 'हिंदी': '3D इकाइयां मैप की गईं', 'தமிழ்': '3D அலகுகள் வரைபடமாக்கப்பட்டன' },
+  'Total Footprint Area': { 'हिंदी': 'कुल पदचिह्न क्षेत्र', 'தமிழ்': 'மொத்த தடம் பரப்பளவு' },
+  'Title Verification Health': { 'हिंदी': 'स्वामित्व सत्यापन स्वास्थ्य', 'தமிழ்': 'தலைப்பு சரிபார்ப்பு ஆரோக்கியம்' },
+  'Citizen Self-Service Actions': { 'हिंदी': 'नागरिक स्वयं-सेवा क्रियाएं', 'தமிழ்': 'குடிமக்கள் சுய சேவை செயல்கள்' },
+  'Unit Change Notifications': { 'हिंदी': 'इकाई परिवर्तन सूचनाएं', 'தமிழ்': 'அலகு மாற்ற அறிவிப்புகள்' },
+  '3D Cadastre Survey Status': { 'हिंदी': '3D कैडस्ट्रे सर्वेक्षण स्थिति', 'தமிழ்': '3D காடாஸ்ட்ரே கணக்கெடுப்பு நிலை' },
+  'Recent Cadastre Notices & Activity': { 'हिंदी': 'हाल के कैडस्ट्रे नोटिस और गतिविधि', 'தமிழ்': 'சமீபத்திய காடாஸ்ட்ரே அறிவிப்புகள் மற்றும் செயல்பாடு' },
+  'Frequently Asked Questions for Property Owners': { 'हिंदी': 'संपत्ति मालिकों के लिए अक्सर पूछे जाने वाले प्रश्न', 'தமிழ்': 'சொத்து உரிமையாளர்களுக்கான அடிக்கடி கேட்கப்படும் கேள்விகள்' },
+  'Open Passport →': { 'हिंदी': 'पासपोर्ट खोलें →', 'தமிழ்': 'பாஸ்போர்ட்டைத் திறக்க →' },
+  'Download Certificate →': { 'हिंदी': 'प्रमाणपत्र डाउनलोड करें →', 'தமிழ்': 'சான்றிதழைப் பதிவிறக்குக →' },
+  'Track & File Issue →': { 'हिंदी': 'समस्या ट्रैक और दर्ज करें →', 'தமிழ்': 'சிக்கலைக் கண்காணிக்கவும் & பதிவு செய்யவும் →' },
+  'Inspect Hash Chain →': { 'हिंदी': 'हैश चेन का निरीक्षण करें →', 'தமிழ்': 'ஹாஷ் சங்கிலியை ஆய்வு செய்க →' },
 }
 
 export default function CitizenDashboard({ session, onOpenMap }) {
@@ -499,20 +512,20 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           <div className="stat-cards">
             <div className="stat-card">
               <b>{totals.count}</b>
-              <span className="muted tiny">Properties Owned</span>
+              <span className="muted tiny">{t('Properties Owned')}</span>
             </div>
             <div className="stat-card">
               <b>{totals.units}</b>
-              <span className="muted tiny">3D Units Mapped</span>
+              <span className="muted tiny">{t('3D Units Mapped')}</span>
             </div>
             <div className="stat-card">
               <b>{totals.area.toLocaleString('en-IN')} m²</b>
-              <span className="muted tiny">Total Footprint Area (~{(totals.area * 10.764).toFixed(0)} sq.ft)</span>
+              <span className="muted tiny">{t('Total Footprint Area')} (~{(totals.area * 10.764).toFixed(0)} sq.ft)</span>
             </div>
             <div className="stat-card" title="Share of your volumetric units with a clear, verified title">
               <b className={needsAttention ? 'stat-warn' : 'stat-ok'}>{titleHealthPct}%</b>
               <span className="muted tiny">
-                Title Verification Health{needsAttention ? ` — ${totals.conflicts} flagged` : ''}
+                {t('Title Verification Health')}{needsAttention ? ` — ${totals.conflicts} flagged` : ''}
               </span>
             </div>
           </div>
@@ -520,7 +533,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           {/* Quick Citizen Services Grid */}
           <div>
             <h3 className="text-xs uppercase font-bold text-[#5C6675] tracking-wider mb-2">
-              Citizen Self-Service Actions
+              {t('Citizen Self-Service Actions')}
             </h3>
             <div className="citizen-quick-services">
               <div
@@ -536,7 +549,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                     Access your official 3D volumetric deed, scannable QR verification code, and architectural floor bounds.
                   </div>
                 </div>
-                <div className="qs-action">Open Passport →</div>
+                <div className="qs-action">{t('Open Passport →')}</div>
               </div>
 
               <div
@@ -552,7 +565,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                     Print or save an authenticated Government of India UPC Certificate &amp; Title Deed with audit trail.
                   </div>
                 </div>
-                <div className="qs-action">Download Certificate →</div>
+                <div className="qs-action">{t('Download Certificate →')}</div>
               </div>
 
               <div
@@ -568,7 +581,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                     Report boundary mismatches, area discrepancies, or track resolution status with the District Registrar.
                   </div>
                 </div>
-                <div className="qs-action">Track &amp; File Issue →</div>
+                <div className="qs-action">{t('Track & File Issue →')}</div>
               </div>
 
               <div
@@ -586,7 +599,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                     Inspect the tamper-proof blockchain ledger validating your sale deed and LiDAR survey mesh.
                   </div>
                 </div>
-                <div className="qs-action">Inspect Hash Chain →</div>
+                <div className="qs-action">{t('Inspect Hash Chain →')}</div>
               </div>
             </div>
           </div>
@@ -596,7 +609,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             <h3 className="flex items-center gap-2 justify-between">
               <span className="flex items-center gap-2">
                 <Activity size={15} className="text-[#4C5BD4]" />
-                Unit Change Notifications
+                {t('Unit Change Notifications')}
               </span>
               <span className="text-xs font-normal text-ink-mid bg-[#4C5BD4]/10 text-[#4C5BD4] px-2 py-0.5 rounded-full">Live</span>
             </h3>
@@ -620,7 +633,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           {/* Survey Progress & Activity Grid */}
           <div className="welcome-grid">
             <div className="panel-section welcome-card">
-              <h3>3D Cadastre Survey Status</h3>
+              <h3>{t('3D Cadastre Survey Status')}</h3>
               <div className="ring-row">
                 <svg width="110" height="110" viewBox="0 0 110 110" className="ring-svg">
                   <circle cx="55" cy="55" r="42" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="10" />
@@ -648,7 +661,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             </div>
 
             <div className="panel-section welcome-card">
-              <h3>Recent Cadastre Notices &amp; Activity</h3>
+              <h3>{t('Recent Cadastre Notices & Activity')}</h3>
               {activity.map((a, i) => (
                 <div key={a.id} className={`act-row ${i === activity.length - 1 ? 'last' : ''}`}>
                   {actIcon[a.type] || actIcon.info}
@@ -664,7 +677,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           {/* Citizen FAQs Section */}
           <div className="panel-section welcome-card">
             <h3 className="flex items-center gap-2">
-              <HelpCircle size={15} className="text-[#4C5BD4]" /> Frequently Asked Questions for Property Owners
+              <HelpCircle size={15} className="text-[#4C5BD4]" /> {t('Frequently Asked Questions for Property Owners')}
             </h3>
             <div className="faq-list mt-3">
               {faqs.map((faq, i) => (
