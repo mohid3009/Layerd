@@ -297,7 +297,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
     : 100
   const needsAttention = totals.conflicts > 0
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const greeting = hour < 12 ? '{t('Good morning')}' : hour < 17 ? '{t('Good afternoon')}' : '{t('Good evening')}'
 
   // Activity log filtered for citizen's owned properties
   const activity = useMemo(() => {
@@ -480,23 +480,23 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             <div className="cb-circle c2" />
             {needsAttention && (
               <div className="absolute top-3 right-3 flex items-center gap-2 bg-red-500/20 border border-red-400/30 text-white text-xs px-3 py-1.5 rounded-full font-semibold">
-                <AlertTriangle size={13} /> {totals.conflicts} unit{totals.conflicts !== 1 ? 's' : ''} need attention
+                <AlertTriangle size={13} /> {totals.conflicts} {t('unit(s) need attention')}
               </div>
             )}
             <div className="cb-content">
               <div className="cb-eyebrow flex items-center gap-2">
-                <span>{greeting} · National Urban 3D Cadastre</span>
+                <span>{greeting} · {t('National Urban 3D Cadastre')}</span>
                 <span className="inline-flex items-center gap-1 bg-white/15 px-2 py-0.5 rounded text-[10px] font-bold text-white">
-                  <ShieldCheck size={11} className="text-[#34D399]" /> Aadhaar Linked
+                  <ShieldCheck size={11} className="text-[#34D399]" /> {t('Aadhaar Linked')}
                 </span>
               </div>
               <div className="cb-title">{t('Welcome')}, {session?.name?.split(' ')[0] || 'Citizen'}</div>
               <div className="cb-sub">
-                Your portfolio holds <b>{totals.count} registered property parcel{totals.count !== 1 ? 's' : ''}</b> in Chennai with{' '}
+                {t('Your portfolio holds')} <b>{totals.count} registered property parcel{totals.count !== 1 ? 's' : ''}</b> in Chennai with{' '}
                 <b>{totals.units} volumetric unit{totals.units !== 1 ? 's' : ''}</b> mapped in 3D.{' '}
                 {needsAttention
-                  ? `${totals.conflicts} unit${totals.conflicts !== 1 ? 's' : ''} flagged for review — open Grievances & Disputes to track resolution.`
-                  : 'All titles are clear and verified against the state revenue register.'}
+                  ? `${totals.conflicts} unit${totals.conflicts !== 1 ? 's' : ''} ${t('flagged for review — open Grievances & Disputes to track resolution.')}`
+                  : t('All titles are clear and verified against the state revenue register.')}
               </div>
               <div className="flex items-center gap-3 mt-4 flex-wrap">
                 <button
@@ -571,9 +571,9 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   <div className="qs-icon-box bg-blue-50 text-[#4C5BD4]">
                     <ShieldCheck size={20} />
                   </div>
-                  <div className="qs-title">Digital Property Passport</div>
+                  <div className="qs-title">{t('Digital Property Passport')}</div>
                   <div className="qs-desc">
-                    Access your official 3D volumetric deed, scannable QR verification code, and architectural floor bounds.
+                    {t('Access your official 3D volumetric deed, scannable QR verification code, and architectural floor bounds.')}
                   </div>
                 </div>
                 <div className="qs-action">{t('Open Passport →')}</div>
@@ -587,9 +587,9 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   <div className="qs-icon-box bg-emerald-50 text-[#1B7A4A]">
                     <Printer size={20} />
                   </div>
-                  <div className="qs-title">Certified UPC &amp; Title Deed</div>
+                  <div className="qs-title">{t('Certified UPC & Title Deed')}</div>
                   <div className="qs-desc">
-                    Print or save an authenticated Government of India UPC Certificate &amp; Title Deed with audit trail.
+                    {t('Print or save an authenticated Government of India UPC Certificate & Title Deed with audit trail.')}
                   </div>
                 </div>
                 <div className="qs-action">{t('Download Certificate →')}</div>
@@ -603,9 +603,9 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   <div className="qs-icon-box bg-amber-50 text-[#8A6410]">
                     <AlertTriangle size={20} />
                   </div>
-                  <div className="qs-title">Grievances &amp; Dispute Desk</div>
+                  <div className="qs-title">{t('Grievances & Dispute Desk')}</div>
                   <div className="qs-desc">
-                    Report boundary mismatches, area discrepancies, or track resolution status with the District Registrar.
+                    {t('Report boundary mismatches, area discrepancies, or track resolution status with the District Registrar.')}
                   </div>
                 </div>
                 <div className="qs-action">{t('Track & File Issue →')}</div>
@@ -621,9 +621,9 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   <div className="qs-icon-box bg-purple-50 text-[#7C3AED]">
                     <Hash size={20} />
                   </div>
-                  <div className="qs-title">Cryptographic Audit Chain</div>
+                  <div className="qs-title">{t('Cryptographic Audit Chain')}</div>
                   <div className="qs-desc">
-                    Inspect the tamper-proof blockchain ledger validating your sale deed and LiDAR survey mesh.
+                    {t('Inspect the tamper-proof blockchain ledger validating your sale deed and LiDAR survey mesh.')}
                   </div>
                 </div>
                 <div className="qs-action">{t('Inspect Hash Chain →')}</div>
@@ -638,13 +638,13 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                 <Activity size={15} className="text-[#4C5BD4]" />
                 {t('Unit Change Notifications')}
               </span>
-              <span className="text-xs font-normal text-ink-mid bg-[#4C5BD4]/10 text-[#4C5BD4] px-2 py-0.5 rounded-full">Live</span>
+              <span className="text-xs font-normal text-ink-mid bg-[#4C5BD4]/10 text-[#4C5BD4] px-2 py-0.5 rounded-full">{t('Live')}</span>
             </h3>
             <div className="mt-3 space-y-2">
               {[
-                { icon: <CheckCircle2 size={15} className="text-emerald-500 shrink-0 mt-0.5" />, title: 'Flat 302 title verified', sub: 'Registrar Arun Krishnan approved the 3D boundary update · 2 Sep 2026', tone: 'ok' },
-                { icon: <Clock size={15} className="text-amber-500 shrink-0 mt-0.5" />, title: 'Flat 201 area mismatch under review', sub: 'Surveyor Priya Venkatesan assigned · Response due 29 Sep 2026', tone: 'warn' },
-                { icon: <ShieldCheck size={15} className="text-[#4C5BD4] shrink-0 mt-0.5" />, title: 'SHA-256 audit entry created', sub: 'New hash-chained record appended for Flat 203, Lakeview Residency · 27 Aug 2026', tone: 'info' },
+                { icon: <CheckCircle2 size={15} className="text-emerald-500 shrink-0 mt-0.5" />, title: t('Flat 302 title verified'), sub: t('Registrar Arun Krishnan approved the 3D boundary update · 2 Sep 2026'), tone: 'ok' },
+                { icon: <Clock size={15} className="text-amber-500 shrink-0 mt-0.5" />, title: t('Flat 201 area mismatch under review'), sub: t('Surveyor Priya Venkatesan assigned · Response due 29 Sep 2026'), tone: 'warn' },
+                { icon: <ShieldCheck size={15} className="text-[#4C5BD4] shrink-0 mt-0.5" />, title: t('SHA-256 audit entry created'), sub: t('New hash-chained record appended for Flat 203, Lakeview Residency · 27 Aug 2026'), tone: 'info' },
               ].map((n, i) => (
                 <div key={i} className={`flex gap-3 p-3 rounded-lg border text-sm ${n.tone === 'ok' ? 'bg-emerald-50 border-emerald-100' : n.tone === 'warn' ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'}`}>
                   {n.icon}
@@ -682,7 +682,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   </text>
                 </svg>
                 <div className="muted tiny ring-note">
-                  <b>{surveyedPct}% mapped in 3D:</b> Your properties have verified LiDAR and OpenStreetMap volumetric storeys registered with the Greater Chennai cadastre.
+                  <b>{surveyedPct}% {t('mapped in 3D:')}</b> {t('Your properties have verified LiDAR and OpenStreetMap volumetric storeys registered with the Greater Chennai cadastre.')}
                 </div>
               </div>
             </div>
@@ -714,10 +714,10 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
                     aria-expanded={openFaq === i}
                   >
-                    <span>{faq.q}</span>
+                    <span>{t(faq.q)}</span>
                     {openFaq === i ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
-                  {openFaq === i && <div className="faq-ans">{faq.a}</div>}
+                  {openFaq === i && <div className="faq-ans">{t(faq.a)}</div>}
                 </div>
               ))}
             </div>
@@ -733,7 +733,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
               <Search size={15} className="rs-icon" />
               <input
                 className="search"
-                placeholder="Search by apartment number, building name, or ULPIN key…"
+                placeholder={t("Search by apartment number, building name, or ULPIN key…")}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -996,7 +996,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                           </span>
                         </div>
                         <div className="text-xs text-ink-mid mt-1">
-                          Property: <span className="font-semibold text-ink">{target?.unitLabel || c.unitId}</span> · Filed on {c.date}
+                          {t('Property:')} <span className="font-semibold text-ink">{target?.unitLabel || c.unitId}</span> · {t("Filed on")} {c.date}
                         </div>
                         <div className="text-xs text-[#1C2530] mt-2 font-medium bg-white p-2.5 rounded border border-[#E4E7EC]">
                           &ldquo;{c.description}&rdquo;
@@ -1009,10 +1009,10 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                             c.status === 'resolved' ? 'status-valid' : 'under-review'
                           }`}
                         >
-                          {c.status === 'resolved' ? '✓ Resolved by Registrar' : '⋯ Under Active Review'}
+                          {c.status === 'resolved' ? '{t('✓ Resolved by Registrar')}' : '{t('⋯ Under Active Review')}'}
                         </span>
                         <span className="text-[11px] text-ink-mid">
-                          Resolution SLA: Within 7 days
+                          {t('Resolution SLA: Within 7 days')}
                         </span>
                       </div>
                     </div>
@@ -1037,7 +1037,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             <div className="modal-header">
               <div className="flex items-center gap-2">
                 <CubeMark size={22} tint="#4C5BD4" />
-                <h3 className="font-bold text-sm text-ink">Official Certificate of Ownership &amp; 3D Title</h3>
+                <h3 className="font-bold text-sm text-ink">{t('Official Certificate of Ownership & 3D Title')}</h3>
               </div>
               <button
                 onClick={() => setSelectedUnitForCert(null)}
@@ -1054,45 +1054,45 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                     Government of India · Department of Land Resources
                   </div>
                   <h2 className="text-xl font-black tracking-tight mt-1 text-[#0D1126]">
-                    CERTIFICATE OF VERTICAL PROPERTY TITLE
+                    {t('CERTIFICATE OF VERTICAL PROPERTY TITLE')}
                   </h2>
                   <div className="text-xs text-ink-mid mt-0.5">
-                    Issued under the National Urban 3D Cadastre Framework (SIH26095)
+                    {t('Issued under the National Urban 3D Cadastre Framework (SIH26095)')}
                   </div>
                 </div>
 
                 <div className="my-5 space-y-3 text-xs">
                   <div className="flex justify-between border-b border-dashed border-[#E4E7EC] pb-1.5">
-                    <span className="text-ink-mid">Unique Land Parcel Identification (3D ULPIN):</span>
+                    <span className="text-ink-mid">{t('Unique Land Parcel Identification (3D ULPIN):')}</span>
                     <span className="font-id font-bold text-[#0D1126]">
                       {selectedUnitForCert.unit_ulpin || selectedUnitForCert.ulpin || 'TN-07-4821-9034-F2-U201'}
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-dashed border-[#E4E7EC] pb-1.5">
-                    <span className="text-ink-mid">Registered Title Holder:</span>
+                    <span className="text-ink-mid">{t('Registered Title Holder:')}</span>
                     <span className="font-bold text-[#0D1126]">
                       {selectedUnitForCert.owner_name || selectedUnitForCert.owner || session.name}
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-dashed border-[#E4E7EC] pb-1.5">
-                    <span className="text-ink-mid">Volumetric Space Designation:</span>
+                    <span className="text-ink-mid">{t('Volumetric Space Designation:')}</span>
                     <span className="font-bold text-[#0D1126]">
                       {selectedUnitForCert.unitLabel || 'Flat 201'} · Level {selectedUnitForCert.floor ?? 2}
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-dashed border-[#E4E7EC] pb-1.5">
-                    <span className="text-ink-mid">Registered Carpet Area:</span>
+                    <span className="text-ink-mid">{t('Registered Carpet Area:')}</span>
                     <span className="font-bold text-[#0D1126]">
                       {selectedUnitForCert.area_sqm || selectedUnitForCert.area || 82} m² (~
                       {Math.round((selectedUnitForCert.area_sqm || selectedUnitForCert.area || 82) * 10.764)} sq.ft)
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-dashed border-[#E4E7EC] pb-1.5">
-                    <span className="text-ink-mid">Encumbrance (NOC) Status:</span>
+                    <span className="text-ink-mid">{t('Encumbrance (NOC) Status:')}</span>
                     <span className="font-bold text-[#1B7A4A]">NIL ENCUMBRANCE · CLEAR TITLE</span>
                   </div>
                   <div className="flex justify-between pb-1.5">
-                    <span className="text-ink-mid">Issuance Date:</span>
+                    <span className="text-ink-mid">{t('Issuance Date:')}</span>
                     <span className="font-medium text-[#0D1126]">
                       {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </span>
@@ -1100,10 +1100,10 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                 </div>
 
                 <div className="pt-4 border-t border-[#E4E7EC] flex items-center justify-between">
-                  <div className="cert-stamp">VERIFIED · DO NOT ALTER</div>
+                  <div className="cert-stamp">{t('VERIFIED · DO NOT ALTER')}</div>
                   <div className="text-right text-[11px] text-ink-mid">
-                    <div className="font-bold text-[#0D1126]">Registrar of Land Records</div>
-                    <div>Cadastral Zone Chennai Central</div>
+                    <div className="font-bold text-[#0D1126]">{t('Registrar of Land Records')}</div>
+                    <div>{t('Cadastral Zone Chennai Central')}</div>
                   </div>
                 </div>
               </div>
@@ -1114,13 +1114,13 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                 className="btn"
                 onClick={() => setSelectedUnitForCert(null)}
               >
-                Close
+                {t('Close')}
               </button>
               <button
                 className="btn primary inline-flex items-center gap-1.5"
                 onClick={() => window.print()}
               >
-                <Printer size={14} /> Print / Save as PDF
+                <Printer size={14} /> {t('Print / Save as PDF')}
               </button>
             </div>
           </div>
@@ -1140,7 +1140,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             <div className="modal-header">
               <div className="flex items-center gap-2">
                 <Hash size={18} className="text-[#4C5BD4]" />
-                <h3 className="font-bold text-sm text-ink">Cryptographic Title Audit Trail</h3>
+                <h3 className="font-bold text-sm text-ink">{t('Cryptographic Title Audit Trail')}</h3>
               </div>
               <button
                 onClick={() => setSelectedUnitForLedger(null)}
@@ -1153,23 +1153,23 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             <div className="modal-body space-y-4 font-mono text-xs">
               <div className="flex items-center justify-between p-3 bg-emerald-50 text-[#1B7A4A] rounded-lg font-sans font-semibold">
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle2 size={16} /> Blockchain State: Verified &amp; Unbroken
+                  <CheckCircle2 size={16} /> {t('Blockchain State: Verified & Unbroken')}
                 </span>
-                <span className="text-xs font-mono">3 Blocks</span>
+                <span className="text-xs font-mono">{t('3 Blocks')}</span>
               </div>
 
               {/* Block 3 */}
               <div className="p-3 bg-[#F9FAFB] rounded-lg border-l-4 border-[#34D399] border border-[#E4E7EC]">
                 <div className="flex justify-between font-bold text-[#1C2530] mb-1">
-                  <span>BLOCK #3 · 3D ULPIN MINTING</span>
+                  <span>{t('BLOCK #3 · 3D ULPIN MINTING')}</span>
                   <span className="text-[10px] text-ink-mid">2026-09-02 14:10 UTC</span>
                 </div>
                 <div className="font-sans text-xs text-[#5C6675] mb-2">
-                  Vertical volumetric boundaries minted and registered to{' '}
+                  {t('Vertical volumetric boundaries minted and registered to')} 
                   {selectedUnitForLedger.owner_name || selectedUnitForLedger.owner || session.name}
                 </div>
                 <div className="text-[11px] text-ink-mid">
-                  Block Hash: <span className="text-[#1B7A4A]">0x4c1a...8e44</span> · Prev:{' '}
+                  {t('Block Hash:')} <span className="text-[#1B7A4A]">0x4c1a...8e44</span> · {t('Prev:')}{' '}
                   <span className="text-[#4C5BD4]">0x9f8e...3b12</span>
                 </div>
               </div>
@@ -1177,11 +1177,11 @@ export default function CitizenDashboard({ session, onOpenMap }) {
               {/* Block 2 */}
               <div className="p-3 bg-[#F9FAFB] rounded-lg border-l-4 border-[#4C5BD4] border border-[#E4E7EC]">
                 <div className="flex justify-between font-bold text-[#1C2530] mb-1">
-                  <span>BLOCK #2 · TOPOLOGY VALIDATION</span>
+                  <span>{t('BLOCK #2 · TOPOLOGY VALIDATION')}</span>
                   <span className="text-[10px] text-ink-mid">2026-08-20 09:30 UTC</span>
                 </div>
                 <div className="font-sans text-xs text-[#5C6675] mb-2">
-                  LiDAR/OpenStreetMap polygon checked for overlaps · 0 conflicting volumes detected
+                  {t('LiDAR/OpenStreetMap polygon checked for overlaps · 0 conflicting volumes detected')}
                 </div>
                 <div className="text-[11px] text-ink-mid">
                   Block Hash: <span className="text-[#4C5BD4]">0x9f8e...3b12</span> · Prev:{' '}
@@ -1192,11 +1192,11 @@ export default function CitizenDashboard({ session, onOpenMap }) {
               {/* Block 1 */}
               <div className="p-3 bg-[#F9FAFB] rounded-lg border-l-4 border-gray-400 border border-[#E4E7EC]">
                 <div className="flex justify-between font-bold text-[#1C2530] mb-1">
-                  <span>BLOCK #1 · SALE DEED CONVEYANCE</span>
+                  <span>{t('BLOCK #1 · SALE DEED CONVEYANCE')}</span>
                   <span className="text-[10px] text-ink-mid">2024-11-14 11:20 UTC</span>
                 </div>
                 <div className="font-sans text-xs text-[#5C6675] mb-2">
-                  Genesis conveyance registered at SRO T. Nagar · Book 1, Volume 12
+                  {t('Genesis conveyance registered at SRO T. Nagar · Book 1, Volume 12')}
                 </div>
                 <div className="text-[11px] text-ink-mid">
                   Block Hash: <span className="text-[#1C2530]">0x1a2b...9981</span> · Prev: 0x0000...0000
@@ -1209,7 +1209,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                 className="btn primary"
                 onClick={() => setSelectedUnitForLedger(null)}
               >
-                Close Audit View
+                {t('Close Audit View')}
               </button>
             </div>
           </div>
@@ -1229,7 +1229,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             <div className="modal-header">
               <div className="flex items-center gap-2">
                 <AlertTriangle size={18} className="text-amber" />
-                <h3 className="font-bold text-sm text-ink">File a Property Discrepancy / Grievance</h3>
+                <h3 className="font-bold text-sm text-ink">{t('File a Property Discrepancy / Grievance')}</h3>
               </div>
               <button
                 onClick={() => setSelectedUnitForDispute(null)}
@@ -1242,7 +1242,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             <form onSubmit={handleFileDispute}>
               <div className="modal-body space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">Select Property</label>
+                  <label className="block text-xs font-semibold text-ink mb-1">{t('Select Property')}</label>
                   <select
                     className="w-full p-2.5 border border-[#E4E7EC] rounded-lg text-sm bg-white"
                     value={grievanceUnitId || selectedUnitForDispute.unit_ulpin || 'unit-2'}
@@ -1257,26 +1257,26 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">Issue Category</label>
+                  <label className="block text-xs font-semibold text-ink mb-1">{t('Issue Category')}</label>
                   <select
                     className="w-full p-2.5 border border-[#E4E7EC] rounded-lg text-sm bg-white"
                     value={grievanceType}
                     onChange={(e) => setGrievanceType(e.target.value)}
                   >
-                    <option>Area mismatch (Deed area differs from 3D model)</option>
-                    <option>Boundary mismatch (Balcony/wall encroachment)</option>
-                    <option>Wrong floor level recorded</option>
-                    <option>Owner name or Aadhaar linkage spelling error</option>
-                    <option>Unauthorized vertical construction on adjacent unit</option>
+                    <option>{t('Area mismatch (Deed area differs from 3D model)')}</option>
+                    <option>{t('Boundary mismatch (Balcony/wall encroachment)')}</option>
+                    <option>{t('Wrong floor level recorded')}</option>
+                    <option>{t('Owner name or Aadhaar linkage spelling error')}</option>
+                    <option>{t('Unauthorized vertical construction on adjacent unit')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">Discrepancy Details</label>
+                  <label className="block text-xs font-semibold text-ink mb-1">{t('Discrepancy Details')}</label>
                   <textarea
                     rows={4}
                     required
-                    placeholder="Describe the discrepancy with respect to your sale deed or physical inspection…"
+                    placeholder={t("Describe the discrepancy with respect to your sale deed or physical inspection…")}
                     className="w-full p-2.5 border border-[#E4E7EC] rounded-lg text-sm bg-white"
                     value={grievanceDesc}
                     onChange={(e) => setGrievanceDesc(e.target.value)}
@@ -1285,7 +1285,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
 
                 {grievanceSubmitted && (
                   <div className="p-3 bg-emerald-50 text-[#1B7A4A] rounded-lg text-xs font-semibold flex items-center gap-2">
-                    <CheckCircle2 size={16} /> Ticket {grievanceSubmitted} created! Redirecting to tracker…
+                    <CheckCircle2 size={16} /> {t('Ticket created! Redirecting to tracker…').replace('{grievanceSubmitted}', grievanceSubmitted)}
                   </div>
                 )}
               </div>
