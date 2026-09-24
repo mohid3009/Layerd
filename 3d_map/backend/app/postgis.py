@@ -9,16 +9,112 @@ WGS84 before persisting). `save_buildings(fc)` upserts by building_id;
 `save_buildings(fc, reconcile=True)` additionally deletes rows missing from
 the payload — used when the user edits the generated set manually so the
 table mirrors the working set exactly.
+
+When PostgreSQL is unavailable (local dev without Docker), a JSON-file
+fallback store is used automatically — no configuration needed.
 """
 
 import json
 import os
+import threading
 from contextlib import contextmanager
 
-import psycopg2
-import psycopg2.extras
+try:
+    import psycopg2
+    import psycopg2.extras
+    _PSYCOPG2_AVAILABLE = True
+except ImportError:
+    _PSYCOPG2_AVAILABLE = False
 
-DSN = os.environ.get("POSTGRES_DSN", "postgresql://postgres:postgres@localhost:5432/layerd")
+DSN = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_DSN", "postgresql://postgres:postgres@localhost:5432/layerd")
+
+# ── JSON file fallback store ──────────────────────────────────────────────────
+# Used automatically when PostgreSQL is unreachable.
+_FALLBACK_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+_BUILDINGS_FILE = os.path.join(_FALLBACK_DIR, "buildings.json")
+_UNITS_FILE = os.path.join(_FALLBACK_DIR, "units.json")
+_fb_lock = threading.Lock()
+
+def _fb_ensure_dir():
+    os.makedirs(_FALLBACK_DIR, exist_ok=True)
+
+def _fb_load(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _fb_save(path, data):
+    _fb_ensure_dir()
+    with open(path, "w") as f:
+        json.dump(data, f)
+
+def _fb_fetch_buildings():
+    data = _fb_load(_BUILDINGS_FILE)
+    return {
+        "type": "FeatureCollection",
+        "features": list(data.values()),
+    }
+
+def _fb_save_buildings(fc, session_id, label=None, reconcile=False):
+    with _fb_lock:
+        data = _fb_load(_BUILDINGS_FILE)
+        incoming_ids = set()
+        for feat in fc.get("features", []):
+            p = feat.get("properties") or {}
+            bid = p.get("building_id")
+            if not bid:
+                continue
+            incoming_ids.add(bid)
+            feat["properties"]["session_id"] = session_id
+            data[bid] = feat
+        if reconcile:
+            for k in list(data.keys()):
+                if data[k].get("properties", {}).get("session_id") == session_id and k not in incoming_ids:
+                    del data[k]
+        _fb_save(_BUILDINGS_FILE, data)
+    return len(incoming_ids)
+
+def _fb_fetch_units(building_id):
+    data = _fb_load(_UNITS_FILE)
+    return data.get(building_id, [])
+
+def _fb_save_units(units):
+    with _fb_lock:
+        data = _fb_load(_UNITS_FILE)
+        for u in units:
+            bid = u.get("building_id")
+            if not bid:
+                continue
+            if bid not in data:
+                data[bid] = []
+            existing = {x["unit_ulpin"]: i for i, x in enumerate(data[bid])}
+            ulp = u.get("unit_ulpin")
+            if ulp in existing:
+                data[bid][existing[ulp]] = u
+            else:
+                data[bid].append(u)
+        _fb_save(_UNITS_FILE, data)
+
+def _fb_delete_units(building_id):
+    with _fb_lock:
+        data = _fb_load(_UNITS_FILE)
+        count = len(data.pop(building_id, []))
+        _fb_save(_UNITS_FILE, data)
+    return count
+
+def _fb_save_floor_units(building_id, floor_index, units):
+    with _fb_lock:
+        data = _fb_load(_UNITS_FILE)
+        existing = [u for u in data.get(building_id, []) if u.get("floor_index") != floor_index]
+        data[building_id] = existing + list(units)
+        _fb_save(_UNITS_FILE, data)
+    return len(units)
+
+# ─────────────────────────────────────────────────────────────────────────────
+
+
 
 SCHEMA = """
 CREATE EXTENSION IF NOT EXISTS postgis;
@@ -58,10 +154,39 @@ CREATE TABLE IF NOT EXISTS ulpin_units (
     owner_id TEXT,
     owner_name TEXT,
     segmentation TEXT,
+    confidence DOUBLE PRECISION,
+    evidence TEXT,
     validation_status TEXT DEFAULT 'valid',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS ulpin_units_building_idx ON ulpin_units (building_id);
+
+CREATE TABLE IF NOT EXISTS pending_unit_edits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    building_id TEXT NOT NULL,
+    unit_ulpin TEXT NOT NULL,
+    proposed_by TEXT NOT NULL,
+    patch JSONB NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    resolved_at TIMESTAMPTZ
+);
+
+-- citizen portal: complaints raised from the mobile app
+CREATE TABLE IF NOT EXISTS citizen_complaints (
+    ticket_id TEXT PRIMARY KEY,
+    citizen_id TEXT NOT NULL,
+    citizen_name TEXT NOT NULL,
+    building_id TEXT,
+    category TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'submitted',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS citizen_complaints_citizen_idx ON citizen_complaints (citizen_id);
+
 
 -- one row per extraction run; buildings reference their scan session
 CREATE TABLE IF NOT EXISTS lidar_sessions (
@@ -79,6 +204,9 @@ INSERT INTO lidar_sessions (session_id, label)
 SELECT DISTINCT session_id, 'Imported scan'
 FROM lidar_buildings WHERE session_id IS NOT NULL
 ON CONFLICT (session_id) DO NOTHING;
+ALTER TABLE ulpin_units ADD COLUMN IF NOT EXISTS confidence DOUBLE PRECISION;
+ALTER TABLE ulpin_units ADD COLUMN IF NOT EXISTS evidence TEXT;
+ALTER TABLE ulpin_units ADD COLUMN IF NOT EXISTS validation_status TEXT DEFAULT 'valid';
 """
 
 
@@ -123,7 +251,22 @@ def ensure_init():
 
 
 def is_available():
+    if not _PSYCOPG2_AVAILABLE:
+        return False
     ensure_init()
+    try:
+        with _conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        return True
+    except Exception:
+        return False
+
+
+def _pg_up():
+    """Quick check: is PostgreSQL reachable right now?"""
+    if not _PSYCOPG2_AVAILABLE:
+        return False
     try:
         with _conn() as conn:
             with conn.cursor() as cur:
@@ -184,6 +327,8 @@ ON CONFLICT (building_id) DO UPDATE SET
 
 def save_session(session_id, label=None, mode=None, crs=None):
     """Register/refresh a scan session row."""
+    if not _pg_up():
+        return  # no-op in fallback mode
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
@@ -246,6 +391,8 @@ def save_buildings(featurecollection, session_id, label=None, mode=None, crs=Non
     """
     if not session_id:
         raise ValueError("session_id is required")
+    if not _pg_up():
+        return _fb_save_buildings(featurecollection, session_id, label=label, reconcile=reconcile)
     ensure_init()
     features = featurecollection.get("features", [])
     save_session(session_id, label=label, mode=mode, crs=crs)
@@ -278,6 +425,8 @@ def save_buildings(featurecollection, session_id, label=None, mode=None, crs=Non
 
 def fetch_buildings(session_id=None):
     """Saved buildings as a GeoJSON FeatureCollection (WGS84), all sessions or one."""
+    if not _pg_up():
+        return _fb_fetch_buildings()
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
@@ -346,6 +495,8 @@ def delete_session(session_id):
 
 
 def count_buildings():
+    if not _pg_up():
+        return len(_fb_load(_BUILDINGS_FILE))
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
@@ -364,6 +515,11 @@ def clear_buildings():
 
 def save_units(building_id, units):
     """Replace the full unit tree of one building; returns the saved count."""
+    if not _pg_up():
+        for u in units:
+            u["building_id"] = building_id
+        _fb_save_units(units)
+        return len(units)
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
@@ -374,7 +530,7 @@ def save_units(building_id, units):
                         u["unit_ulpin"], building_id, u["base_ulpin"], u["floor_index"],
                         u["unit_no"], json.dumps(u["polygon"]), u.get("area_sqm"),
                         u.get("rights_type"), u.get("owner_id"), u.get("owner_name"),
-                        u.get("segmentation"), u.get("validation_status", "valid"),
+                        u.get("segmentation"), u.get("confidence"), u.get("evidence"), u.get("validation_status", "valid"),
                     )
                     for u in units
                 ]
@@ -382,12 +538,13 @@ def save_units(building_id, units):
                     cur,
                     """INSERT INTO ulpin_units (unit_ulpin, building_id, base_ulpin, floor_index,
                                                unit_no, polygon, area_sqm, rights_type, owner_id,
-                                               owner_name, segmentation, validation_status)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                               owner_name, segmentation, confidence, evidence, validation_status)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                        ON CONFLICT (unit_ulpin) DO UPDATE SET
                          polygon = EXCLUDED.polygon, area_sqm = EXCLUDED.area_sqm,
                          rights_type = EXCLUDED.rights_type, owner_id = EXCLUDED.owner_id,
                          owner_name = EXCLUDED.owner_name, segmentation = EXCLUDED.segmentation,
+                         confidence = EXCLUDED.confidence, evidence = EXCLUDED.evidence,
                          validation_status = EXCLUDED.validation_status""",
                     rows,
                     page_size=500,
@@ -398,12 +555,14 @@ def save_units(building_id, units):
 
 def fetch_units(building_id):
     """All ULPIN units of one building, ordered floor then unit number."""
+    if not _pg_up():
+        return _fb_fetch_units(building_id)
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """SELECT unit_ulpin, base_ulpin, floor_index, unit_no, polygon, area_sqm,
-                          rights_type, owner_id, owner_name, segmentation, validation_status
+                          rights_type, owner_id, owner_name, segmentation, validation_status, confidence, evidence
                    FROM ulpin_units WHERE building_id = %s
                    ORDER BY floor_index, unit_no""",
                 (building_id,),
@@ -415,6 +574,7 @@ def fetch_units(building_id):
             "floor_index": r[2], "unit_no": r[3], "polygon": r[4], "area_sqm": r[5],
             "rights_type": r[6], "owner_id": r[7], "owner_name": r[8],
             "segmentation": r[9], "validation_status": r[10],
+            "confidence": r[11], "evidence": r[12],
         }
         for r in rows
     ]
@@ -422,8 +582,87 @@ def fetch_units(building_id):
 
 def delete_units(building_id):
     """Remove the whole unit tree of one building; returns removed count."""
+    if not _pg_up():
+        return _fb_delete_units(building_id)
     ensure_init()
     with _conn() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM ulpin_units WHERE building_id = %s", (building_id,))
             return cur.rowcount
+
+def propose_unit_edit(building_id, unit_ulpin, proposed_by, patch):
+    ensure_init()
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO pending_unit_edits (building_id, unit_ulpin, proposed_by, patch) VALUES (%s, %s, %s, %s) RETURNING id",
+                (building_id, unit_ulpin, proposed_by, json.dumps(patch)),
+            )
+            return cur.fetchone()[0]
+
+def get_pending_unit_edits():
+    ensure_init()
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, building_id, unit_ulpin, proposed_by, patch, status, created_at FROM pending_unit_edits WHERE status = 'pending'")
+            rows = cur.fetchall()
+    return [
+        {
+            "id": r[0], "building_id": r[1], "unit_ulpin": r[2],
+            "proposed_by": r[3], "patch": r[4], "status": r[5], "created_at": r[6].isoformat()
+        }
+        for r in rows
+    ]
+
+def confirm_unit_edit(edit_id, status):
+    ensure_init()
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE pending_unit_edits SET status = %s, resolved_at = now() WHERE id = %s RETURNING building_id, unit_ulpin, patch", (status, edit_id))
+            row = cur.fetchone()
+            if not row:
+                return None
+            building_id, unit_ulpin, patch = row
+            if status == 'confirmed':
+                if 'owner_name' in patch:
+                    cur.execute("UPDATE ulpin_units SET owner_name = %s WHERE unit_ulpin = %s", (patch['owner_name'], unit_ulpin))
+                if 'rights_type' in patch:
+                    cur.execute("UPDATE ulpin_units SET rights_type = %s WHERE unit_ulpin = %s", (patch['rights_type'], unit_ulpin))
+            return row
+
+def save_floor_units(building_id, floor_index, units):
+    """Replace the units of a single floor in a building; returns the saved count."""
+    if not _pg_up():
+        return _fb_save_floor_units(building_id, floor_index, units)
+    ensure_init()
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM ulpin_units WHERE building_id = %s AND floor_index = %s", (building_id, floor_index))
+            if units:
+                rows = [
+                    (
+                        u["unit_ulpin"], building_id, u["base_ulpin"], u["floor_index"],
+                        u["unit_no"], json.dumps(u["polygon"]), u.get("area_sqm"),
+                        u.get("rights_type"), u.get("owner_id"), u.get("owner_name"),
+                        u.get("segmentation"), u.get("confidence"), u.get("evidence"), u.get("validation_status", "valid"),
+                    )
+                    for u in units
+                ]
+                import psycopg2.extras
+                psycopg2.extras.execute_batch(
+                    cur,
+                    """INSERT INTO ulpin_units (unit_ulpin, building_id, base_ulpin, floor_index,
+                                               unit_no, polygon, area_sqm, rights_type, owner_id,
+                                               owner_name, segmentation, confidence, evidence, validation_status)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                       ON CONFLICT (unit_ulpin) DO UPDATE SET
+                         polygon = EXCLUDED.polygon, area_sqm = EXCLUDED.area_sqm,
+                         rights_type = EXCLUDED.rights_type, owner_id = EXCLUDED.owner_id,
+                         owner_name = EXCLUDED.owner_name, segmentation = EXCLUDED.segmentation,
+                         confidence = EXCLUDED.confidence, evidence = EXCLUDED.evidence,
+                         validation_status = EXCLUDED.validation_status""",
+                    rows,
+                    page_size=500,
+                )
+                return len(rows)
+            return 0

@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { login } from '../api.js'
+import CubeMark from './CubeMark.jsx'
 
 const ROLES = [
   {
     id: 'citizen',
     title: 'Citizen',
     blurb: 'view your units, file disputes, inspect ownership history',
-    username: 'ramesh',
+    username: 'citizen1',
     password: 'citizen123',
     icon: '🏠',
   },
@@ -14,7 +16,7 @@ const ROLES = [
     id: 'surveyor',
     title: 'Surveyor',
     blurb: 'upload floor plans, split units, run conflict validation',
-    username: 'priya',
+    username: 'surveyor1',
     password: 'survey123',
     icon: '📐',
   },
@@ -22,7 +24,7 @@ const ROLES = [
     id: 'registrar',
     title: 'Registrar',
     blurb: 'review disputes, audit hash-chained ledgers, publish to NGDRS',
-    username: 'arun',
+    username: 'registrar1',
     password: 'register123',
     icon: '🏛️',
   },
@@ -68,8 +70,13 @@ export default function Login({ onLogin, onBack, initialRole = 'citizen' }) {
           </button>
         )}
         <div className="login-head">
-          <h1>Layerd</h1>
-          <p className="muted tiny">3D cadastral system · SIH26095</p>
+          <div className="brand-mark login-mark" aria-label="Avani logo">
+            <CubeMark size={30} tint="#8B93E8" />
+          </div>
+          <div>
+            <h1>Avani</h1>
+            <p className="muted tiny">Government of India · National Urban Cadastre · Demo</p>
+          </div>
         </div>
 
         <div className="login-roles">
@@ -79,6 +86,7 @@ export default function Login({ onLogin, onBack, initialRole = 'citizen' }) {
               type="button"
               className={`login-role ${role === r.id ? 'active' : ''}`}
               onClick={() => pickRole(r)}
+              disabled={busy}
             >
               <span className="login-role-icon">{r.icon}</span>
               <span>
@@ -97,6 +105,7 @@ export default function Login({ onLogin, onBack, initialRole = 'citizen' }) {
             placeholder={active.username}
             autoFocus
             autoComplete="username"
+            disabled={busy}
           />
         </label>
         <label className="login-field">
@@ -107,6 +116,7 @@ export default function Login({ onLogin, onBack, initialRole = 'citizen' }) {
             onChange={(e) => { setPassword(e.target.value); setError(null) }}
             placeholder="••••••••"
             autoComplete="current-password"
+            disabled={busy}
           />
         </label>
 

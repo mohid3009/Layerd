@@ -12,6 +12,7 @@ node_modules/
 ulpin.db
 *.db-journal
 lidar/full_lidar_centered.ply
+chennai_raw.json
 
 # --- logs ---
 *.log

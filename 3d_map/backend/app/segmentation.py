@@ -70,8 +70,9 @@ def _yolo_units(image_bytes, max_units=10):
     res = model(img, conf=0.35, verbose=False)[0]
 
     out = []
-    if res.masks is not None:
-        for m in res.masks.data:  # (n, mh, mw) float 0..1
+    if res.masks is not None and res.boxes is not None:
+        for i, m in enumerate(res.masks.data):  # (n, mh, mw) float 0..1
+            conf = float(res.boxes[i].conf[0]) if res.boxes[i].conf is not None else 0.8
             mask = (m.cpu().numpy() * 255).astype(np.uint8)
             mask = cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST)
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -81,14 +82,15 @@ def _yolo_units(image_bytes, max_units=10):
             if cv2.contourArea(c) < min_area:
                 continue
             x, y, cw, ch = cv2.boundingRect(c)
-            out.append((x / w, y / h, (x + cw) / w, (y + ch) / h))
+            out.append((x / w, y / h, (x + cw) / w, (y + ch) / h, conf))
     if not out and res.boxes is not None:
         # fall back to detection boxes when the model produced no masks
         for b in res.boxes:
+            conf = float(b.conf[0]) if b.conf is not None else 0.8
             x0, y0, x1, y1 = [float(v) for v in b.xyxy[0]]
             if (x1 - x0) * (y1 - y0) < min_area:
                 continue
-            out.append((x0 / w, y0 / h, x1 / w, y1 / h))
+            out.append((x0 / w, y0 / h, x1 / w, y1 / h, conf))
     out.sort(key=lambda r: (r[2] - r[0]) * (r[3] - r[1]), reverse=True)
     return out[:max_units]
 
@@ -112,6 +114,9 @@ def random_units(n_units, seed):
         else:
             cells.append((x0, y0, x1, y0 + h * t))
             cells.append((x0, y0 + h * t, x1, y1))
+    
+    # Append random confidence to each cell
+    cells = [(x0, y0, x1, y1, round(float(rng.uniform(0.65, 0.95)), 2)) for x0, y0, x1, y1 in cells]
     return cells
 
 
@@ -122,13 +127,18 @@ def segment_floorplan(image_bytes=None, n_units=None, seed=None):
     image_bytes  — optional floor-plan image (PNG/JPG): YOLOv11-seg is used
     n_units/seed — fallback random plan controls
 
-    Returns {'source': 'yolo' | 'random', 'rects': [(x0, y0, x1, y1), ...]}.
+    Returns {'source': 'yolo' | 'random', 'rects': [(x0, y0, x1, y1, conf), ...]}.
     """
     if image_bytes:
         try:
             rects = _yolo_units(image_bytes)
             if len(rects) >= 2:
                 return {"source": "yolo", "rects": rects}
-        except Exception:
+            else:
+                print(f"YOLO segmentation failed: found {len(rects)} rects, need at least 2")
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"YOLO segmentation exception: {e}")
             pass  # ultralytics missing / weights unavailable / bad image → fallback
     return {"source": "random", "rects": random_units(n_units or 6, seed or 0)}
