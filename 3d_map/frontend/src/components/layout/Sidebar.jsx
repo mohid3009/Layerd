@@ -1,20 +1,22 @@
-﻿import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, FileText, ShieldCheck, MessageSquareWarning, User } from 'lucide-react'
-import { currentUser, ownedUnits, openComplaints } from '../../mockData.js'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, FileText, ShieldCheck, MessageSquareWarning, User, LogOut } from 'lucide-react'
+import { currentUser, buildings, complaints } from '../../mockData.js'
 
 const base =
   'flex items-center gap-3 px-3 py-2 mx-3 rounded-[10px] text-sm font-medium border-l-[3px] border-l-transparent'
 const active = 'border-l-accent bg-neutralbg text-accent'
 const idle = 'text-ink hover:bg-neutralbg'
 
-export default function Sidebar() {
-  const firstOwned = ownedUnits()[0]
-  const openCount = openComplaints().length
+export default function Sidebar({ onLogout }) {
+  const navigate = useNavigate()
+  const ownedUnits = buildings.flatMap(b => b.units).filter(u => currentUser.ownedUnitIds.includes(u.id))
+  const firstOwned = ownedUnits[0]
+  const openCount = complaints.filter(c => c.status !== 'resolved').length
   return (
-    <aside className="hidden min-[900px]:flex w-[232px] shrink-0 flex-col bg-surface border-r border-line sticky top-[60px] h-[calc(100vh-60px)] overflow-y-auto py-4">
+    <aside className="citizen-sidebar hidden min-[900px]:flex w-[232px] shrink-0 flex-col bg-surface border-r border-line sticky top-0 h-[calc(100vh-60px)] overflow-y-auto py-5">
       <div className="text-[10px] uppercase tracking-widest text-ink-soft px-6 mb-2">Menu</div>
       <nav className="flex flex-col gap-0.5">
-        <NavLink to="/portal" end className={({ isActive }) => `${base} ${isActive ? active : idle}`}>
+        <NavLink to="/dashboard" end className={({ isActive }) => `${base} ${isActive ? active : idle}`}>
           <LayoutDashboard size={17} /> Dashboard
         </NavLink>
         <NavLink to="/portal/records" className={({ isActive }) => `${base} ${isActive ? active : idle}`}>
@@ -48,12 +50,22 @@ export default function Sidebar() {
         <NavLink to="/portal/profile" className={({ isActive }) => `${base} ${isActive ? active : idle}`}>
           <User size={17} /> Profile &amp; Settings
         </NavLink>
+        <button
+          type="button"
+          className="citizen-sidebar-logout flex items-center gap-3 px-3 py-2 mx-3 rounded-[10px] text-sm font-medium text-[#B42318] border-l-[3px] border-l-transparent hover:bg-[#FDECEC]"
+          onClick={() => {
+            onLogout?.()
+            navigate('/')
+          }}
+        >
+          <LogOut size={17} /> Log out
+        </button>
       </nav>
 
       <div className="mt-auto mx-3 mt-6 rounded-[12px] bg-neutralbg border border-line p-3.5">
         <div className="text-xs font-bold text-ink">Ministry of Rural Development</div>
         <div className="text-[11px] text-ink-mid mt-0.5">
-          Government of India Â· National 3D ULPIN Framework
+          Government of India · National 3D ULPIN Framework
         </div>
       </div>
     </aside>

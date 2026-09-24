@@ -60,8 +60,9 @@ export default function Building3DScene({ floors = 3, basements = 1, unitFloor =
         gap: 6,
         zIndex: 10
       }}>
-        <span>slice gap</span>
+        <span>Slice gap</span>
         <input
+          aria-label="Adjust spacing between floor slices"
           type="range"
           min="0"
           max="0.6"

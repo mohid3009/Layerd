@@ -6,7 +6,9 @@ import Login from './components/Login.jsx'
 const Dashboard = lazy(() => import('./components/Dashboard.jsx'))
 const Building3DView = lazy(() => import('./pages/Building3DView.jsx'))
 import Topbar from './components/layout/Topbar.jsx'
+import Sidebar from './components/layout/Sidebar.jsx'
 import PropertyPassport from './pages/PropertyPassport.jsx'
+import PropertyDetails from './pages/PropertyDetails.jsx'
 import ComplaintForm from './pages/ComplaintForm.jsx'
 import PropertyRecords from './pages/PropertyRecords.jsx'
 import UnifiedPropertyCard from './pages/UnifiedPropertyCard.jsx'
@@ -38,13 +40,22 @@ function saveSession(s) {
  * Wraps a page component with the app topbar and a centred content column.
  * `maxW` controls the max-width of the content area.
  */
-function PageShell({ session, onLogout, onSwitchRole, maxW = '1100px', children }) {
+function PageShell({ session, onLogout, onSwitchRole, activeLanguage, onLanguageChange, maxW = '1100px', children }) {
   return (
     <div className="app min-h-screen citizen-dash" style={{ background: '#F5F6F8', color: '#1C2530', overflowY: 'auto' }}>
-      <Topbar session={session} onLogout={onLogout} onSwitchRole={onSwitchRole} />
-      <main className="flex-1 p-5 w-full mx-auto" style={{ maxWidth: maxW }}>
-        {children}
-      </main>
+      <Topbar
+        session={session}
+        onLogout={onLogout}
+        onSwitchRole={onSwitchRole}
+        activeLanguage={activeLanguage}
+        onLanguageChange={onLanguageChange}
+      />
+      <div className="citizen-shell-body flex min-w-0 flex-1">
+        {session?.role === 'citizen' && <Sidebar onLogout={onLogout} />}
+        <main className="flex-1 min-w-0 p-5 w-full mx-auto" style={{ maxWidth: maxW }}>
+          {children}
+        </main>
+      </div>
     </div>
   )
 }
@@ -55,6 +66,7 @@ import { useState } from 'react'
 
 export default function App() {
   const [session, setSession] = useState(loadSession)
+  const [activeLanguage, setActiveLanguage] = useState(() => localStorage.getItem('avani-language') || 'English')
 
   // Linear-style cursor spotlight: track the pointer over glass cards and
   // expose its position as CSS vars consumed by the card ::after glow.
@@ -76,9 +88,16 @@ export default function App() {
     updateSession(DEMO_USERS[newRole] ?? DEMO_USERS.citizen)
   }
 
+  const changeLanguage = (language) => {
+    setActiveLanguage(language)
+    localStorage.setItem('avani-language', language)
+  }
+
   const sharedProps = {
-    onLogout:     () => updateSession(null),
-    onSwitchRole: switchRole,
+    onLogout:         () => updateSession(null),
+    onSwitchRole:     switchRole,
+    activeLanguage,
+    onLanguageChange: changeLanguage,
   }
 
   return (
@@ -99,6 +118,7 @@ export default function App() {
 
       <Route path="/portal/building/:id/3d" element={<PageShell session={session} {...sharedProps}><Building3DView /></PageShell>} />
       {/* Portal pages */}
+      <Route path="/portal/property/:id" element={<PageShell session={session} {...sharedProps} maxW="1160px"><PropertyDetails /></PageShell>} />
       <Route path="/portal/records"      element={<PageShell session={session} {...sharedProps} maxW="1100px"><PropertyRecords /></PageShell>} />
       <Route path="/portal/upc/:id"      element={<PageShell session={session} {...sharedProps} maxW="800px"><UnifiedPropertyCard /></PageShell>} />
       <Route path="/portal/report/:unitId" element={<PageShell session={session} {...sharedProps} maxW="800px"><ComplaintForm /></PageShell>} />
@@ -109,7 +129,7 @@ export default function App() {
         path="/ulpin"
         element={
           <div className="app">
-            <Topbar session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />
+            <Topbar session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} activeLanguage={activeLanguage} onLanguageChange={changeLanguage} />
             <ErrorBoundary>
               <Suspense fallback={<PageFallback />}>
                 <UlpinView session={session} />
@@ -124,7 +144,7 @@ export default function App() {
         path="/lidar"
         element={
           <div className="app">
-            <Topbar session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />
+            <Topbar session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} activeLanguage={activeLanguage} onLanguageChange={changeLanguage} />
             <ErrorBoundary>
               <Suspense fallback={<PageFallback />}>
                 <LidarMap
@@ -142,7 +162,7 @@ export default function App() {
         path="/pointcloud"
         element={
           <div className="app">
-            <Topbar session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />
+            <Topbar session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} activeLanguage={activeLanguage} onLanguageChange={changeLanguage} />
             <ErrorBoundary>
               <Suspense fallback={<PageFallback />}>
                 <PointCloudViewer session={session} />
@@ -157,7 +177,7 @@ export default function App() {
         path="/oblique"
         element={
           <div className="app">
-            <Topbar session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} />
+            <Topbar session={session} onLogout={() => updateSession(null)} onSwitchRole={switchRole} activeLanguage={activeLanguage} onLanguageChange={changeLanguage} />
             <ErrorBoundary>
               <Suspense fallback={<PageFallback />}>
                 <ObliqueImagery session={session} />

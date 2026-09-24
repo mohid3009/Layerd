@@ -4,11 +4,13 @@ import {
   Building2, CheckCircle2, Clock, FileText, ArrowRight, Activity, MapPin, Search,
   ShieldCheck, Printer, AlertTriangle, Copy, Check, ExternalLink, HelpCircle,
   ChevronDown, ChevronUp, FileCheck, Layers, Hash, Sparkles, X, PlusCircle,
-  Volume2, Globe2
+  Volume2
 } from 'lucide-react'
 import { citizenProperties, peekUnits, demoBaseUlpin, digipin, generateUnits } from '../api.js'
 import { activityLog, complaints, addComplaint, getUnit } from '../mockData.js'
 import CubeMark from './CubeMark.jsx'
+import Building3DScene from './Building3DScene.jsx'
+import MapInset from './ui/MapInset.jsx'
 
 const M_PER_DEG = 111320
 
@@ -70,7 +72,7 @@ const i18n = {
   'flagged for review — open Grievances & Disputes to track resolution.': { 'हिंदी': 'समीक्षा के लिए फ़्लैग किया गया — समाधान ट्रैक करने के लिए शिकायतें और विवाद खोलें।', 'தமிழ்': 'மதிப்பாய்வுக்காக கொடியிடப்பட்டது — தீர்மானத்தைக் கண்காணிக்க குறைகள் மற்றும் தகராறுகளைத் திறக்கவும்.' },
   'All titles are clear and verified against the state revenue register.': { 'हिंदी': 'सभी स्वामित्व स्पष्ट हैं और राज्य राजस्व रजिस्टर के विरुद्ध सत्यापित हैं।', 'தமிழ்': 'அனைத்து தலைப்புகளும் தெளிவாக உள்ளன மற்றும் மாநில வருவாய் பதிவேட்டில் சரிபார்க்கப்படுகின்றன.' },
   'Good morning': { 'हिंदी': 'शुभ प्रभात', 'தமிழ்': 'காலை வணக்கம்' },
-  'Good afternoon': { 'हिंदी': 'शुभ दोपहर', 'தமிழ்': 'मதிய வணக்கம்' },
+  'Good afternoon': { 'हिंदी': 'शुभ दोपहर', 'தமிழ்': 'மதிய வணக்கம்' },
   'Good evening': { 'हिंदी': 'शुभ संध्या', 'தமிழ்': 'மாலை வணக்கம்' },
   'Digital Property Passport': { 'हिंदी': 'डिजिटल संपत्ति पासपोर्ट', 'தமிழ்': 'டிஜிட்டல் சொத்து பாஸ்போர்ட்' },
   'Access your official 3D volumetric deed, scannable QR verification code, and architectural floor bounds.': { 'हिंदी': 'अपने आधिकारिक 3D वोल्यूमेट्रिक डीड, स्कैन करने योग्य QR सत्यापन कोड और वास्तुशिल्प फर्श की सीमाओं तक पहुंचें।', 'தமிழ்': 'உங்கள் அதிகாரப்பூர்வ 3D வோல்யூமெட்ரிக் பத்திரம், ஸ்கேன் செய்யக்கூடிய QR சரிபார்ப்பு குறியீடு மற்றும் கட்டடக்கலை தரை எல்லைகளை அணுகவும்.' },
@@ -141,7 +143,7 @@ const i18n = {
   'View Blockchain Ledger →': { 'हिंदी': 'ब्लॉकचेन खाता बही देखें →', 'தமிழ்': 'பிளாக்செயின் லெட்ஜரைக் காண்க →' },
 }
 
-export default function CitizenDashboard({ session, onOpenMap }) {
+export default function CitizenDashboard({ session, onOpenMap, activeLanguage = 'English' }) {
   const navigate = useNavigate()
   const [props, setProps] = useState([])
   const [loading, setLoading] = useState(true)
@@ -151,9 +153,13 @@ export default function CitizenDashboard({ session, onOpenMap }) {
   const [statusFilter, setStatusFilter] = useState('all') // all | verified | review
   const [copiedId, setCopiedId] = useState(null)
   const [toast, setToast] = useState(null)
+  
+  // Property Card Redesign State
+  const [expandedUnitId, setExpandedUnitId] = useState(null)
+  const [editingTitleId, setEditingTitleId] = useState(null)
+  const [titleValues, setTitleValues] = useState({})
 
-  const [activeLang, setActiveLang] = useState('English')
-  const t = (key) => i18n[key]?.[activeLang] || key
+  const t = (key) => i18n[key]?.[activeLanguage] || key
 
   // Modals state
   const [selectedUnitForCert, setSelectedUnitForCert] = useState(null)
@@ -412,7 +418,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
   const actIcon = {
     verified: <CheckCircle2 size={15} className="act-ic ic-green" />,
     review: <Clock size={15} className="act-ic ic-amber" />,
-    info: <FileText size={15} className="act-ic ic-blue" />,
+    info: <FileText size={15} className="act-ic ic-info" />,
   }
 
   const handleFileDispute = (e) => {
@@ -515,24 +521,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           >
             <MapPin size={13} /> {t('3D City Map View')}
           </button>
-          <div className="relative group">
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded bg-white border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors">
-              <Globe2 size={16} className="text-ink-mid" />
-              {activeLang}
-              <ChevronDown size={14} className="text-ink-mid" />
-            </button>
-            <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-              {['English', 'हिंदी', 'தமிழ்'].map(lang => (
-                <button
-                  key={lang}
-                  onClick={() => setActiveLang(lang)}
-                  className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${activeLang === lang ? 'font-bold text-[#4C5BD4]' : 'text-ink'}`}
-                >
-                  {lang}
-                </button>
-              ))}
-            </div>
-          </div>
+
         </div>
       </div>
 
@@ -599,7 +588,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
               <rect x="76" y="28" width="10" height="10" fill="rgba(255,255,255,0.35)" />
               <rect x="92" y="28" width="10" height="10" fill="rgba(255,255,255,0.35)" />
               <rect x="76" y="44" width="10" height="10" fill="rgba(255,255,255,0.35)" />
-              <rect x="92" y="44" width="10" height="10" fill="#5E6AD2" opacity="0.9" />
+              <rect x="92" y="44" width="10" height="10" fill="#E0B85C" opacity="0.9" />
               <rect x="76" y="60" width="10" height="10" fill="rgba(255,255,255,0.35)" />
               <rect x="92" y="60" width="10" height="10" fill="rgba(255,255,255,0.35)" />
               <rect x="76" y="76" width="10" height="10" fill="rgba(255,255,255,0.35)" />
@@ -615,29 +604,43 @@ export default function CitizenDashboard({ session, onOpenMap }) {
 
           {/* Stat Cards */}
           <div className="stat-cards">
-            <div className="stat-card">
+            <div className="stat-card stat-card-forest">
+              <div className="stat-card-head">
+                <span className="stat-icon"><Building2 size={18} /></span>
+                <span className="muted tiny">{t('Properties Owned')}</span>
+              </div>
               <b>{totals.units}</b>
-              <span className="muted tiny">{t('Properties Owned')}</span>
+              <span className="stat-meta">Registered to your linked identity</span>
             </div>
-            <div className="stat-card">
+            <div className="stat-card stat-card-olive">
+              <div className="stat-card-head">
+                <span className="stat-icon"><Layers size={18} /></span>
+                <span className="muted tiny">{t('3D Units Mapped')}</span>
+              </div>
               <b>{totals.units}</b>
-              <span className="muted tiny">{t('3D Units Mapped')}</span>
+              <span className="stat-meta">Surveyed volumetric records</span>
             </div>
-            <div className="stat-card">
+            <div className="stat-card stat-card-amber">
+              <div className="stat-card-head">
+                <span className="stat-icon"><MapPin size={18} /></span>
+                <span className="muted tiny">{t('Total Footprint Area')}</span>
+              </div>
               <b>{totals.area.toLocaleString('en-IN')} m²</b>
-              <span className="muted tiny">{t('Total Footprint Area')} (~{(totals.area * 10.764).toFixed(0)} sq.ft)</span>
+              <span className="stat-meta">~{(totals.area * 10.764).toFixed(0)} sq.ft across all units</span>
             </div>
-            <div className="stat-card" title="Share of your volumetric units with a clear, verified title">
+            <div className={`stat-card ${needsAttention ? 'stat-card-warn' : 'stat-card-green'}`} title="Share of your volumetric units with a clear, verified title">
+              <div className="stat-card-head">
+                <span className="stat-icon"><ShieldCheck size={18} /></span>
+                <span className="muted tiny">{t('Title Verification Health')}</span>
+              </div>
               <b className={needsAttention ? 'stat-warn' : 'stat-ok'}>{titleHealthPct}%</b>
-              <span className="muted tiny">
-                {t('Title Verification Health')}{needsAttention ? ` — ${totals.conflicts} flagged` : ''}
-              </span>
+              <span className="stat-meta">{needsAttention ? `${totals.conflicts} unit${totals.conflicts !== 1 ? 's' : ''} flagged for review` : 'All titles clear and verified'}</span>
             </div>
           </div>
 
           {/* Quick Citizen Services Grid */}
           <div>
-            <h3 className="text-xs uppercase font-bold text-[#5C6675] tracking-wider mb-2">
+            <h3 className="text-xs uppercase font-bold text-[#1C2530] tracking-wider mb-2">
               {t('Citizen Self-Service Actions')}
             </h3>
             <div className="citizen-quick-services">
@@ -646,7 +649,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                 {...cardProps(() => navigate(`/passport/${portfolio.units[0]?.u.unit_ulpin || 'unit-2'}`))}
               >
                 <div>
-                  <div className="qs-icon-box bg-blue-50 text-[#4C5BD4]">
+                  <div className="qs-icon-box bg-[#E8F4EF] text-[#176B55]">
                     <ShieldCheck size={20} />
                   </div>
                   <div className="qs-title">{t('Digital Property Passport')}</div>
@@ -696,7 +699,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                 )}
               >
                 <div>
-                  <div className="qs-icon-box bg-purple-50 text-[#7C3AED]">
+                  <div className="qs-icon-box bg-[#F8ECE7] text-[#A9533F]">
                     <Hash size={20} />
                   </div>
                   <div className="qs-title">{t('Cryptographic Audit Chain')}</div>
@@ -713,18 +716,18 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           <div className="panel-section welcome-card mb-0">
             <h3 className="flex items-center gap-2 justify-between">
               <span className="flex items-center gap-2">
-                <Activity size={15} className="text-[#4C5BD4]" />
+                <Activity size={15} className="text-[#176B55]" />
                 {t('Unit Change Notifications')}
               </span>
-              <span className="text-xs font-normal text-ink-mid bg-[#4C5BD4]/10 text-[#4C5BD4] px-2 py-0.5 rounded-full">{t('Live')}</span>
+              <span className="text-xs font-normal text-ink-mid bg-[#176B55]/10 text-[#176B55] px-2 py-0.5 rounded-full">{t('Live')}</span>
             </h3>
             <div className="mt-3 space-y-2">
               {[
-                { icon: <CheckCircle2 size={15} className="text-emerald-500 shrink-0 mt-0.5" />, title: t('Flat 302 title verified'), sub: t('Registrar Arun Krishnan approved the 3D boundary update · 2 Sep 2026'), tone: 'ok' },
-                { icon: <Clock size={15} className="text-amber-500 shrink-0 mt-0.5" />, title: t('Flat 201 area mismatch under review'), sub: t('Surveyor Priya Venkatesan assigned · Response due 29 Sep 2026'), tone: 'warn' },
-                { icon: <ShieldCheck size={15} className="text-[#4C5BD4] shrink-0 mt-0.5" />, title: t('SHA-256 audit entry created'), sub: t('New hash-chained record appended for Flat 203, Lakeview Residency · 27 Aug 2026'), tone: 'info' },
+                { icon: <CheckCircle2 size={15} className="text-[#1B7A4A] shrink-0 mt-0.5" />, title: t('Flat 302 title verified'), sub: t('Registrar Arun Krishnan approved the 3D boundary update · 2 Sep 2026'), tone: 'ok' },
+                { icon: <Clock size={15} className="text-[#8A6410] shrink-0 mt-0.5" />, title: t('Flat 201 area mismatch under review'), sub: t('Surveyor Priya Venkatesan assigned · Response due 29 Sep 2026'), tone: 'warn' },
+                { icon: <ShieldCheck size={15} className="text-[#176B55] shrink-0 mt-0.5" />, title: t('SHA-256 audit entry created'), sub: t('New hash-chained record appended for Flat 203, Lakeview Residency · 27 Aug 2026'), tone: 'info' },
               ].map((n, i) => (
-                <div key={i} className={`flex gap-3 p-3 rounded-lg border text-sm ${n.tone === 'ok' ? 'bg-emerald-50 border-emerald-100' : n.tone === 'warn' ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'}`}>
+                <div key={i} className={`flex gap-3 p-3 rounded-lg border text-sm ${n.tone === 'ok' ? 'bg-[#E9F7F0] border-[#C4E8D6]' : n.tone === 'warn' ? 'bg-[#FDF4E3] border-[#F0DCAE]' : 'bg-[#E8F4EF] border-[#C6DFD4]'}`}>
                   {n.icon}
                   <div>
                     <div className="font-semibold text-[#1C2530]">{n.title}</div>
@@ -747,7 +750,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                     cy="55"
                     r="42"
                     fill="none"
-                    stroke="#4C5BD4"
+                    stroke="#176B55"
                     strokeWidth="10"
                     strokeLinecap="round"
                     strokeDasharray={2 * Math.PI * 42}
@@ -782,7 +785,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           {/* Citizen FAQs Section */}
           <div className="panel-section welcome-card">
             <h3 className="flex items-center gap-2">
-              <HelpCircle size={15} className="text-[#4C5BD4]" /> {t('Frequently Asked Questions for Property Owners')}
+              <HelpCircle size={15} className="text-[#176B55]" /> {t('Frequently Asked Questions for Property Owners')}
             </h3>
             <div className="faq-list mt-3">
               {faqs.map((faq, i) => (
@@ -878,135 +881,58 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           )}
 
           {filtered.units.length > 0 && (
-            <div className="prop-grid">
-              {filtered.units.map(({ u, building, status, tone }) => {
+            <div className="prop-grid property-summary-grid">
+              {filtered.units.map(({ u, building, tone }) => {
                 const unitId = u.unit_ulpin || u.id || 'unit-2'
                 const displayUlpin = u.unit_ulpin || u.ulpin || `TN-07-${building.building_id}`
-                const label = u.unitLabel || 'Residential Unit'
-                const owner = u.owner_name || u.owner || session?.name || 'Citizen'
+                const label = u.unitLabel || u.subunit_name || 'Residential Unit'
+                const area = u.area_sqm || u.area || 82
+                const statusLabel = tone === 'verified' ? 'Verified Title' : tone === 'conflict' ? 'Boundary Conflict' : 'Under Review'
 
                 return (
-                  <div key={unitId} className="prop-card">
-                    <div className="prop-head">
-                      <div>
-                        <strong>{label}</strong>
-                        <div className="muted tiny unit-where mt-0.5">
-                          <MapPin size={11} className="unit-pin" /> {building.name || 'Building'} · Floor {u.floor ?? 2}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`chip ${
-                            tone === 'verified'
-                              ? 'status-valid'
-                              : tone === 'conflict'
-                                ? 'status-conflict'
-                                : 'under-review'
-                          }`}
-                        >
-                          {tone === 'verified'
-                            ? '✓ Clear Title'
-                            : tone === 'conflict'
-                              ? '⚠ Boundary Conflict'
-                              : '⋯ Under Review'}
+                  <button
+                    type="button"
+                    key={unitId}
+                    className={`property-summary-card tone-${tone}`}
+                    onClick={() => navigate(`/portal/property/${encodeURIComponent(unitId)}`)}
+                    aria-label={`Open details for ${label} in ${building.name || 'registered building'}`}
+                  >
+                    <div className="property-card-map">
+                      <MapInset
+                        highlightUnit
+                        geometry={building.geometry}
+                        ulpin={building.baseUlpin || displayUlpin}
+                        address={building.address || 'Chennai'}
+                        label={label}
+                      />
+                    </div>
+
+                    <div className="property-card-content">
+                      <div className="property-card-topline">
+                        <span className={`property-status tone-${tone}`}>
+                          {tone === 'verified' ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
+                          {statusLabel}
                         </span>
-                        <button
-                          onClick={() => speakText(`Title Status: ${tone === 'verified' ? 'Clear Title' : tone === 'conflict' ? 'Boundary Conflict' : 'Under Review'}`)}
-                          className="p-1 rounded hover:bg-black/5 text-ink-mid"
-                          title="Read status aloud"
-                        >
-                          <Volume2 size={14} />
-                        </button>
+                        <ArrowRight size={17} className="property-card-arrow" />
                       </div>
+
+                      <div>
+                        <h3>{label}</h3>
+                        <p className="property-card-address"><MapPin size={13} /> {building.name || 'Registered Building'}</p>
+                      </div>
+
+                      <div className="property-card-metrics">
+                        <div><span>Floor</span><strong>{u.floor ?? 2}</strong></div>
+                        <div><span>Carpet area</span><strong>{area} m²</strong></div>
+                        <div><span>Title</span><strong>{tone === 'verified' ? 'Clear' : 'Review'}</strong></div>
+                      </div>
+
+                      <div className="property-card-ulpin">
+                        <Hash size={12} /> <span>{displayUlpin}</span>
+                      </div>
+                      <span className="property-card-open">View property details <ArrowRight size={14} /></span>
                     </div>
-
-                    <table className="kv mt-2">
-                      <tbody>
-                        <tr>
-                          <td>{t('Carpet Area')}</td>
-                          <td>
-                            <b>{u.area_sqm || u.area || 82} m²</b>
-                            <span className="muted tiny ml-1">
-                              (~{Math.round((u.area_sqm || u.area || 82) * 10.764)} sq.ft)
-                            </span>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>{t('Registered Owner')}</td>
-                          <td>{owner}</td>
-                        </tr>
-                        <tr>
-                          <td>{t('National 3D ULPIN')}</td>
-                          <td>
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="mono tiny truncate max-w-[200px]" title={displayUlpin}>
-                                {displayUlpin}
-                              </span>
-                              <button
-                                onClick={() => copyToClipboard(displayUlpin, unitId)}
-                                className="p-1 hover:bg-black/5 rounded text-ink-mid"
-                                title="Copy ULPIN"
-                              >
-                                {copiedId === unitId ? <Check size={12} className="text-green" /> : <Copy size={12} />}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>{t('Encumbrance (NOC)')}</td>
-                          <td>
-                            <span className="text-[#1B7A4A] font-semibold text-xs">{t('Nil / Clear Title')}</span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    {/* Action Button Row */}
-                    <div className="prop-card-actions">
-                      <button
-                        className="btn tiny primary inline-flex items-center gap-1.5 flex-1 justify-center"
-                        onClick={() => navigate(`/passport/${unitId}`)}
-                        title="View complete Digital Property Passport"
-                      >
-                        <ShieldCheck size={13} /> {t('Passport')}
-                      </button>
-
-                      <button
-                        className="btn tiny inline-flex items-center gap-1.5 flex-1 justify-center"
-                        onClick={() => setSelectedUnitForCert(u)}
-                        title="Download or print official Certificate of Ownership"
-                      >
-                        <Printer size={13} /> {t('Certificate')}
-                      </button>
-
-                      <button
-                        className="btn tiny inline-flex items-center gap-1.5 flex-1 justify-center"
-                        onClick={() => setSelectedUnitForLedger(u)}
-                        title="Inspect blockchain audit chain"
-                      >
-                        <Hash size={13} /> {t('Ledger')}
-                      </button>
-
-                      <button
-                        className="btn tiny prop-report-btn inline-flex items-center gap-1.5 justify-center"
-                        onClick={() => {
-                          setGrievanceUnitId(unitId)
-                          setSelectedUnitForDispute(u)
-                        }}
-                        title="Report boundary or area discrepancy"
-                      >
-                        <AlertTriangle size={13} /> {t('Report')}
-                      </button>
-
-                      <button
-                        className="btn tiny inline-flex items-center gap-1.5 flex-1 justify-center"
-                        onClick={() => onOpenMap(building.building_id || building.id)}
-                        title="Show on 3D Map"
-                      >
-                        <MapPin size={13} /> {t('Map')}
-                      </button>
-                    </div>
-                  </div>
+                  </button>
                 )
               })}
             </div>
@@ -1069,7 +995,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-sm text-ink">{c.id}</span>
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-[#4C5BD4]">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#E8F4EF] text-[#176B55]">
                             {c.issueType}
                           </span>
                         </div>
@@ -1114,7 +1040,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           >
             <div className="modal-header">
               <div className="flex items-center gap-2">
-                <CubeMark size={22} tint="#4C5BD4" />
+                <CubeMark size={22} tint="#176B55" />
                 <h3 className="font-bold text-sm text-ink">{t('Official Certificate of Ownership & 3D Title')}</h3>
               </div>
               <button
@@ -1128,7 +1054,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
             <div className="modal-body">
               <div className="cert-frame text-[#1C2530]">
                 <div className="text-center pb-4 border-b border-[#E4E7EC]">
-                  <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#4C5BD4]">
+                  <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#176B55]">
                     Government of India · Department of Land Resources
                   </div>
                   <h2 className="text-xl font-black tracking-tight mt-1 text-[#0D1126]">
@@ -1217,7 +1143,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           >
             <div className="modal-header">
               <div className="flex items-center gap-2">
-                <Hash size={18} className="text-[#4C5BD4]" />
+                <Hash size={18} className="text-[#176B55]" />
                 <h3 className="font-bold text-sm text-ink">{t('Cryptographic Title Audit Trail')}</h3>
               </div>
               <button
@@ -1242,27 +1168,27 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   <span>{t('BLOCK #3 · 3D ULPIN MINTING')}</span>
                   <span className="text-[10px] text-ink-mid">2026-09-02 14:10 UTC</span>
                 </div>
-                <div className="font-sans text-xs text-[#5C6675] mb-2">
+                <div className="font-sans text-xs text-[#1C2530] mb-2">
                   {t('Vertical volumetric boundaries minted and registered to')} 
                   {selectedUnitForLedger.owner_name || selectedUnitForLedger.owner || session.name}
                 </div>
                 <div className="text-[11px] text-ink-mid">
                   {t('Block Hash:')} <span className="text-[#1B7A4A]">0x4c1a...8e44</span> · {t('Prev:')}{' '}
-                  <span className="text-[#4C5BD4]">0x9f8e...3b12</span>
+                  <span className="text-[#176B55]">0x9f8e...3b12</span>
                 </div>
               </div>
 
               {/* Block 2 */}
-              <div className="p-3 bg-[#F9FAFB] rounded-lg border-l-4 border-[#4C5BD4] border border-[#E4E7EC]">
+              <div className="p-3 bg-[#F9FAFB] rounded-lg border-l-4 border-[#176B55] border border-[#E4E7EC]">
                 <div className="flex justify-between font-bold text-[#1C2530] mb-1">
                   <span>{t('BLOCK #2 · TOPOLOGY VALIDATION')}</span>
                   <span className="text-[10px] text-ink-mid">2026-08-20 09:30 UTC</span>
                 </div>
-                <div className="font-sans text-xs text-[#5C6675] mb-2">
+                <div className="font-sans text-xs text-[#1C2530] mb-2">
                   {t('LiDAR/OpenStreetMap polygon checked for overlaps · 0 conflicting volumes detected')}
                 </div>
                 <div className="text-[11px] text-ink-mid">
-                  Block Hash: <span className="text-[#4C5BD4]">0x9f8e...3b12</span> · Prev:{' '}
+                  Block Hash: <span className="text-[#176B55]">0x9f8e...3b12</span> · Prev:{' '}
                   <span className="text-ink-mid">0x1a2b...9981</span>
                 </div>
               </div>
@@ -1273,7 +1199,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
                   <span>{t('BLOCK #1 · SALE DEED CONVEYANCE')}</span>
                   <span className="text-[10px] text-ink-mid">2024-11-14 11:20 UTC</span>
                 </div>
-                <div className="font-sans text-xs text-[#5C6675] mb-2">
+                <div className="font-sans text-xs text-[#1C2530] mb-2">
                   {t('Genesis conveyance registered at SRO T. Nagar · Book 1, Volume 12')}
                 </div>
                 <div className="text-[11px] text-ink-mid">
@@ -1306,7 +1232,7 @@ export default function CitizenDashboard({ session, onOpenMap }) {
           >
             <div className="modal-header">
               <div className="flex items-center gap-2">
-                <AlertTriangle size={18} className="text-amber" />
+                <AlertTriangle size={18} className="text-[#8A6410]" />
                 <h3 className="font-bold text-sm text-ink">{t('File a Property Discrepancy / Grievance')}</h3>
               </div>
               <button

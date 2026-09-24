@@ -10,6 +10,7 @@ import {
 import BuildingsMap from './BuildingsMap.jsx'
 import CitizenDashboard from './CitizenDashboard.jsx'
 import Topbar from './layout/Topbar.jsx'
+import Sidebar from './layout/Sidebar.jsx'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ export default function Dashboard(props) {
   return <DashboardContent {...props} />
 }
 
-function DashboardContent({ session, onLogout, onSwitchRole }) {
+function DashboardContent({ session, onLogout, onSwitchRole, activeLanguage, onLanguageChange }) {
 
   const [state, setState]               = useState('loading') // loading | ready | empty | unavailable
   const [features, setFeatures]         = useState([])
@@ -529,15 +530,25 @@ function DashboardContent({ session, onLogout, onSwitchRole }) {
   if (isCitizen && !citizenMapView) {
     return (
       <div className="app min-h-screen citizen-dash" style={{ background: '#F5F6F8', color: '#1C2530', overflowY: 'auto' }}>
-        <Topbar session={session} onLogout={onLogout} onSwitchRole={onSwitchRole} />
-        <CitizenDashboard
+        <Topbar
           session={session}
-          onOpenMap={(id) => {
-            setSelCountry(null); setSelRegion(null); setFocusSid(null)
-            setSelectedId(id || null)
-            setCitizenMapView(true)
-          }}
+          onLogout={onLogout}
+          onSwitchRole={onSwitchRole}
+          activeLanguage={activeLanguage}
+          onLanguageChange={onLanguageChange}
         />
+        <div className="citizen-shell-body flex min-w-0">
+          <Sidebar onLogout={onLogout} />
+          <CitizenDashboard
+            session={session}
+            activeLanguage={activeLanguage}
+            onOpenMap={(id) => {
+              setSelCountry(null); setSelRegion(null); setFocusSid(null)
+              setSelectedId(id || null)
+              setCitizenMapView(true)
+            }}
+          />
+        </div>
       </div>
     )
   }
@@ -545,7 +556,13 @@ function DashboardContent({ session, onLogout, onSwitchRole }) {
   // ── main layout ───────────────────────────────────────────────────────────
   return (
     <div className="app">
-      <Topbar session={session} onLogout={onLogout} onSwitchRole={onSwitchRole}>
+      <Topbar
+        session={session}
+        onLogout={onLogout}
+        onSwitchRole={onSwitchRole}
+        activeLanguage={activeLanguage}
+        onLanguageChange={onLanguageChange}
+      >
         {isRegistrar && (
           <div className="top-search">
             <input

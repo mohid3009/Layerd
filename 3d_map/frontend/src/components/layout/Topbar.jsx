@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Building2, Cloud, FileText, Image, Layers, LogOut, ScanLine, ShieldCheck, X, Settings, User } from 'lucide-react'
+import { Building2, Cloud, FileText, Globe2, Image, Layers, ScanLine } from 'lucide-react'
 import CubeMark from '../CubeMark.jsx'
 import { ROLE_LABELS } from '../../constants.js'
 
@@ -13,12 +13,11 @@ import { ROLE_LABELS } from '../../constants.js'
  *   onSwitchRole – called with the new role string when the demo role switcher is used
  *   children     – optional slot for extra content (e.g. registrar search box)
  */
-export default function Topbar({ session, onLogout, onSwitchRole, children }) {
+export default function Topbar({ session, onLogout, onSwitchRole, activeLanguage = 'English', onLanguageChange, children }) {
   const isCitizen   = session?.role === 'citizen'
   const isRegistrar = session?.role === 'registrar'
   const isSurveyor  = session?.role === 'surveyor'
   const [q, setQ]   = useState('')
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const navigate    = useNavigate()
 
   const handleSearch = (e) => {
@@ -39,7 +38,7 @@ export default function Topbar({ session, onLogout, onSwitchRole, children }) {
     <header className="topbar">
       <div className="brand" onClick={() => navigate('/dashboard')} title="Avani Cadastre Home">
         <div className="brand-mark" aria-label="Avani logo">
-          <CubeMark size={22} tint={isCitizen ? '#4C5BD4' : isRegistrar ? '#C9A45C' : '#8B93E8'} />
+          <CubeMark size={22} tint={isCitizen ? '#E0B85C' : isRegistrar ? '#C9A45C' : '#8B93E8'} />
         </div>
         <div className="brand-text">
           <h1>Avani</h1>
@@ -58,13 +57,7 @@ export default function Topbar({ session, onLogout, onSwitchRole, children }) {
             >
               <Building2 size={14} /> My Properties
             </NavLink>
-            <NavLink
-              to="/passport/unit-2"
-              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
-              title="Digital Property Passport"
-            >
-              <ShieldCheck size={14} /> Digital Passport
-            </NavLink>
+
             <NavLink
               to="/portal/records"
               className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
@@ -118,13 +111,6 @@ export default function Topbar({ session, onLogout, onSwitchRole, children }) {
             >
               <Layers size={14} /> 3D Unit Tree
             </NavLink>
-            <NavLink
-              to="/portal/records"
-              className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
-              title="Browse City Cadastre Records"
-            >
-              <FileText size={14} /> Records
-            </NavLink>
           </>
         )}
       </nav>
@@ -141,6 +127,22 @@ export default function Topbar({ session, onLogout, onSwitchRole, children }) {
             aria-label="Search ULPIN or property ID"
           />
         </form>
+      )}
+
+      {isCitizen && (
+        <label className="topbar-language" title="Choose language">
+          <Globe2 size={15} aria-hidden="true" />
+          <span className="sr-only">Language</span>
+          <select
+            value={activeLanguage}
+            onChange={(e) => onLanguageChange?.(e.target.value)}
+            aria-label="Language"
+          >
+            <option value="English">English</option>
+            <option value="हिंदी">हिंदी</option>
+            <option value="தமிழ்">தமிழ்</option>
+          </select>
+        </label>
       )}
 
       {/* Interactive Role Switcher */}
@@ -174,52 +176,15 @@ export default function Topbar({ session, onLogout, onSwitchRole, children }) {
         </div>
       </div>
 
-      {/* Avatar Button */}
-      <button className="avatar-btn" onClick={() => setIsProfileOpen(true)} title="Open Profile">
+      {/* Account access stays compact; full actions live in the left sidebar. */}
+      <button
+        className="avatar-btn"
+        onClick={() => navigate('/portal/profile')}
+        title="Open profile and settings"
+        aria-label={`Open profile for ${displayName}, ${roleName}`}
+      >
         {initials}
       </button>
-
-      {/* Profile Drawer */}
-      {isProfileOpen && (
-        <>
-          <div className="profile-drawer-backdrop" onClick={() => setIsProfileOpen(false)}></div>
-          <div className="profile-drawer">
-            <div className="profile-drawer-header">
-              <h2>Account</h2>
-              <button className="btn-close" onClick={() => setIsProfileOpen(false)} title="Close">
-                <X size={18} />
-              </button>
-            </div>
-            
-            <div className="profile-drawer-user">
-              <div className="user-avatar large">{initials}</div>
-              <div className="session-meta">
-                <span className="session-name">{displayName}</span>
-                <span className={`session-role role-${session?.role || 'citizen'}`}>{roleName}</span>
-              </div>
-            </div>
-
-            <div className="profile-drawer-nav">
-              <button className="drawer-nav-item">
-                <User size={16} /> My Profile
-              </button>
-              <button className="drawer-nav-item">
-                <Settings size={16} /> Preferences
-              </button>
-            </div>
-            
-            <div className="profile-drawer-footer">
-              <button
-                className="btn-logout-drawer"
-                onClick={() => { onLogout?.(); navigate('/') }}
-              >
-                <LogOut size={16} />
-                <span>Log out</span>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
     </header>
   )
 }

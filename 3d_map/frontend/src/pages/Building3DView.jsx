@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import { MousePointer, CircleDot, CheckCircle2, Clock } from 'lucide-react'
+import { MousePointer, CircleDot, ArrowLeft } from 'lucide-react'
 import Breadcrumb from '../components/ui/Breadcrumb.jsx'
 import DetailGrid from '../components/ui/DetailGrid.jsx'
 import Building3DScene from '../components/Building3DScene.jsx'
@@ -15,7 +15,7 @@ export default function Building3DView() {
         <Breadcrumb current="3D Building View" />
         <div className="bg-surface border border-line rounded-[14px] p-6 text-sm text-ink-mid">
           Building not found.{' '}
-          <Link to="/portal/records" className="text-accent font-semibold">Back to records</Link>
+          <Link to="/portal/records" className="text-[#4C5BD4] font-semibold">Back to records</Link>
         </div>
       </div>
     )
@@ -25,35 +25,40 @@ export default function Building3DView() {
   const ownedHere = b.units.find(
     (u) => currentUser.ownedUnitIds.includes(u.id),
   )
-  const unitFloor = ownedHere ? ownedHere.floor : 3
+  const unitFloor = ownedHere?.floor ?? null
 
   return (
     <div className="max-w-[1080px]">
       <Breadcrumb current="3D Building View" />
-      <h1 className="text-xl font-extrabold text-ink">{b.name} — 3D</h1>
-      <p className="text-sm text-ink-mid mt-0.5 mb-4">{b.address}</p>
+      <button onClick={() => window.history.back()} className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1C2530] hover:text-[#1C2530] mb-2 mt-2">
+        <ArrowLeft size={13} /> Back
+      </button>
+      <h1 className="text-xl font-extrabold text-[#1C2530]">{b.name} — 3D</h1>
+      <p className="text-sm text-[#1C2530] mt-0.5 mb-4">{b.address}</p>
 
       <div className="grid gap-4 min-[900px]:grid-cols-[1fr_320px]">
-        <div className="relative bg-surface border border-line rounded-[14px] overflow-hidden h-[440px]">
+        <div
+          className="relative bg-surface border border-line rounded-[14px] overflow-hidden h-[440px]"
+          role="img"
+          aria-label={`Interactive 3D floor model of ${b.name}${ownedHere ? ` with ${ownedHere.unitLabel} selected on floor ${ownedHere.floor}` : ''}`}
+        >
           <Building3DScene
             floors={b.floors}
             basements={b.basements}
             unitFloor={unitFloor}
             size={2.2}
           />
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-ink/80 text-white text-[11px] px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 pointer-events-none">
-            <MousePointer size={12} /> drag to rotate
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-ink/80 text-white text-[11px] px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 pointer-events-none whitespace-nowrap">
+            <MousePointer size={12} /> Drag or swipe to rotate
           </div>
           <div className="absolute bottom-3 left-3 bg-surface/95 border border-line rounded-[10px] px-3 py-2 flex flex-col gap-1 text-[11px] text-ink">
-            <span className="inline-flex items-center gap-1.5">
-              <CircleDot size={11} className="text-accent" /> Selected unit
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <CheckCircle2 size={11} className="text-blue" /> Verified
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Clock size={11} className="text-amber" /> Under review
-            </span>
+            {ownedHere ? (
+              <span className="inline-flex items-center gap-1.5">
+                <CircleDot size={11} className="text-[#D6423A]" /> {ownedHere.unitLabel} selected
+              </span>
+            ) : (
+              <span>No owned unit highlighted</span>
+            )}
           </div>
         </div>
 

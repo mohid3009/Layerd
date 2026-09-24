@@ -4,8 +4,8 @@
 /* ── Citizen portal design tokens (Tailwind v4 theme) — Linear dark ───────── */
 @theme {
   --color-ink: #EDEDEF;
-  --color-ink-mid: #8A8F98;
-  --color-ink-soft: #8A8F98;
+  --color-ink-mid: #1C2530;
+  --color-ink-soft: #1C2530;
   --color-page: #050506;
   --color-surface: #0A0A0C;
   --color-amber: #FBBF24;
@@ -343,14 +343,14 @@ body::before { content: none; }
   box-shadow: 0 1px 4px rgba(76, 91, 212, 0.12);
 }
 .citizen-dash .brand-tag {
-  color: #5C6675;
+  color: #1C2530;
 }
 .citizen-dash .mode-switch {
   background: #F2F4F7;
   border-color: #E4E7EC;
 }
 .citizen-dash .nav-link-item {
-  color: #5C6675;
+  color: #1C2530;
 }
 .citizen-dash .nav-link-item:hover {
   background: #E9EDF3;
@@ -363,14 +363,14 @@ body::before { content: none; }
   box-shadow: 0 1px 3px rgba(16, 24, 40, 0.10), 0 1px 2px rgba(16, 24, 40, 0.06);
 }
 .citizen-dash .role-label-text {
-  color: #5C6675;
+  color: #1C2530;
 }
 .citizen-dash .role-pill-group {
   background: #F2F4F7;
   border-color: #E4E7EC;
 }
 .citizen-dash .role-pill-btn {
-  color: #5C6675;
+  color: #1C2530;
 }
 .citizen-dash .role-pill-btn:hover {
   color: #1C2530;
@@ -402,7 +402,7 @@ body::before { content: none; }
 .citizen-dash .btn-logout {
   background: #FFFFFF;
   border-color: #CDD4DF;
-  color: #5C6675;
+  color: #1C2530;
 }
 .citizen-dash .btn-logout:hover {
   background: #FEE2E2;
@@ -2468,9 +2468,9 @@ textarea::placeholder, input::placeholder { color: #6E6E75; }
   --border: #E4E7EC;
   --border-strong: #CDD4DF;
   --text: #1C2530;
-  --muted: #5C6675;
+  --muted: #1C2530;
   --accent: #1F5AE0;
-  --accent2: #5C6675;
+  --accent2: #1C2530;
   --grad: #1F5AE0;
   --success: #188554;
   --warning: #B7791F;
@@ -2848,9 +2848,9 @@ textarea:focus, select:focus { border-color: #0F766E; box-shadow: 0 0 0 3px rgba
   --border: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.10);
   --text: #EDEDEF;
-  --muted: #8A8F98;
+  --muted: #1C2530;
   --accent: #5E6AD2;
-  --accent2: #8A8F98;
+  --accent2: #1C2530;
   --grad: #5E6AD2;
   --success: #3FB68B;
   --warning: #E2B93B;
@@ -2919,7 +2919,7 @@ body::after {
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
-.topbar .muted { color: #8A8F98; }
+.topbar .muted { color: #1C2530; }
 .topbar .session-name { color: #EDEDEF; }
 .topbar .btn {
   background: rgba(255, 255, 255, 0.05);
@@ -2934,7 +2934,7 @@ body::after {
 }
 .mode-switch .btn {
   background: transparent;
-  color: #8A8F98;
+  color: #1C2530;
   border-color: transparent;
   box-shadow: none;
 }
@@ -3040,7 +3040,7 @@ body::after {
 .panel-section:hover::after,
 .stat-card:hover::after,
 .prop-card:hover::after { opacity: 1; }
-.panel-section h3 { color: #8A8F98; }
+.panel-section h3 { color: #1C2530; }
 .panel-section h3::before { background: #5E6AD2; }
 
 /* sections are monochrome glass - the rainbow accents retire */
@@ -3052,7 +3052,7 @@ body::after {
   border-left-color: rgba(94, 106, 210, 0.5);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
 }
-.panel-section[class*='acc-'] h3 { color: #8A8F98; }
+.panel-section[class*='acc-'] h3 { color: #1C2530; }
 .panel-section[class*='acc-'] h3::before { background: #5E6AD2; }
 
 /* forms + inputs */
@@ -3146,16 +3146,16 @@ input[type='file']::file-selector-button:hover { border-color: rgba(255, 255, 25
   background: rgba(10, 10, 12, 0.7);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
-.guide-title { color: #8A8F98; }
+.guide-title { color: #1C2530; }
 .guide-step b {
   background: rgba(255, 255, 255, 0.05);
-  color: #8A8F98;
+  color: #1C2530;
   border-color: rgba(255, 255, 255, 0.1);
 }
 .guide-step a { color: #A5B4FC; }
 
 .tab-btns .btn:not(.primary).nav-sessions,
-.tab-btns .btn:not(.primary).nav-confirmations { color: #8A8F98; }
+.tab-btns .btn:not(.primary).nav-confirmations { color: #1C2530; }
 .tab-btns .btn:not(.primary).nav-sessions:hover,
 .tab-btns .btn:not(.primary).nav-confirmations:hover { background: rgba(255, 255, 255, 0.05); color: #EDEDEF; }
 .tab-btns .btn.primary {
@@ -3167,7 +3167,7 @@ input[type='file']::file-selector-button:hover { border-color: rgba(255, 255, 25
 .session-role.role-citizen,
 .session-role.role-surveyor,
 .session-role.role-registrar {
-  color: #8A8F98;
+  color: #1C2530;
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.10);
 }
@@ -3310,7 +3310,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   padding: 7px 14px;
   font-size: 13px;
   font-weight: 500;
-  color: #8A8F98;
+  color: #1C2530;
   cursor: pointer;
   font-family: inherit;
   transition: background 0.2s ease-out, color 0.2s ease-out;
@@ -3401,7 +3401,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   gap: 5px;
   margin-top: -4px;
 }
-.unit-pin { color: #8A8F98; }
+.unit-pin { color: #1C2530; }
 .await-title {
   letter-spacing: 0.1em;
   margin: 6px 0 0;
@@ -3412,8 +3412,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   --color-page: #F5F6F8;
   --color-surface: #FFFFFF;
   --color-ink: #1C2530;
-  --color-ink-mid: #5C6675;
-  --color-ink-soft: #8A8F98;
+  --color-ink-mid: #1C2530;
+  --color-ink-soft: #1C2530;
   --color-line: #E4E7EC;
   --color-linesoft: #F2F4F7;
   --panel: #FFFFFF;
@@ -3423,7 +3423,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   --border: #E4E7EC;
   --border-strong: #CDD4DF;
   --text: #1C2530;
-  --muted: #5C6675;
+  --muted: #1C2530;
   --accent: #4C5BD4;
   --grad: #4C5BD4;
   --glow-accent: 0 0 0 3px rgba(76, 91, 212, 0.15);
@@ -3434,8 +3434,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 
 /* Ensure common utility classes adhere to the clean light theme inside citizen-dash */
 .citizen-dash .text-ink:not(.text-white) { color: #1C2530; }
-.citizen-dash .text-ink-mid { color: #5C6675; }
-.citizen-dash .text-ink-soft { color: #8A8F98; }
+.citizen-dash .text-ink-mid { color: #1C2530; }
+.citizen-dash .text-ink-soft { color: #1C2530; }
 .citizen-dash .bg-surface { background-color: #FFFFFF; }
 .citizen-dash .bg-page { background-color: #F5F6F8; }
 .citizen-dash .border-line { border-color: #E4E7EC; }
@@ -3461,11 +3461,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 .citizen-dash .prop-card::after {
   background: radial-gradient(300px circle at var(--mx, 50%) var(--my, 50%), rgba(76, 91, 212, 0.08), transparent 65%);
 }
-.citizen-dash .panel-section h3 { color: #5C6675; }
+.citizen-dash .panel-section h3 { color: #1C2530; }
 .citizen-dash .panel-section h3::before { background: #4C5BD4; }
 
 /* tabs */
-.citizen-dash .view-tab { color: #5C6675; }
+.citizen-dash .view-tab { color: #1C2530; }
 .citizen-dash .view-tab:hover { background: #ECF0F5; color: #1C2530; }
 .citizen-dash .view-tab.active {
   background: #4C5BD4;
@@ -3521,7 +3521,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 .citizen-dash .chip.status-valid { color: #1B7A4A; background: #E9F7F0; border-color: #C4E8D6; }
 .citizen-dash .chip.under-review { color: #8A6410; background: #FDF4E3; border-color: #F0DCAE; }
 .citizen-dash .chip.status-conflict { color: #B42318; background: #FDECEC; border-color: #F5C6C2; }
-.citizen-dash .chip.chip-muted { color: #5C6675; background: #F2F4F7; border-color: #E0E3E8; }
+.citizen-dash .chip.chip-muted { color: #1C2530; background: #F2F4F7; border-color: #E0E3E8; }
 .citizen-dash .chip.rights-common { color: #4B5563; background: #F3F4F6; border-color: #E0E3E8; }
 
 /* progress ring ink */
@@ -3608,7 +3608,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 }
 .qs-desc {
   font-size: 12px;
-  color: #5C6675;
+  color: #1C2530;
   line-height: 1.45;
 }
 .qs-action {
@@ -3635,7 +3635,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   font-weight: 500;
   background: #FFFFFF;
   border: 1px solid #E4E7EC;
-  color: #5C6675;
+  color: #1C2530;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -3691,7 +3691,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 .faq-ans {
   padding: 0 16px 14px;
   font-size: 12.5px;
-  color: #5C6675;
+  color: #1C2530;
   line-height: 1.55;
 }
 
@@ -4438,7 +4438,7 @@ td.diff-after {
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #5C6675;
+  color: #1C2530;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -4594,7 +4594,7 @@ td.diff-after {
 }
 .qs-desc {
   font-size: 12px;
-  color: #5C6675;
+  color: #1C2530;
   line-height: 1.5;
 }
 .qs-action {
@@ -4620,7 +4620,7 @@ td.diff-after {
   font-weight: 500;
   background: #FFFFFF;
   border: 1px solid #E4E7EC;
-  color: #5C6675;
+  color: #1C2530;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
@@ -4660,7 +4660,7 @@ td.diff-after {
 }
 .citizen-dash .prop-card .kv td:first-child,
 .citizen-main-content .prop-card .kv td:first-child {
-  color: #5C6675;
+  color: #1C2530;
 }
 
 /* ── Prop card action row ────────────────────────────────────────────────── */
@@ -4736,7 +4736,7 @@ td.diff-after {
   flex: 1;
   min-width: 120px;
   font-size: 12.5px;
-  color: #5C6675;
+  color: #1C2530;
   line-height: 1.6;
 }
 
@@ -4796,7 +4796,7 @@ td.diff-after {
 .faq-ans {
   padding: 4px 16px 14px;
   font-size: 12.5px;
-  color: #5C6675;
+  color: #1C2530;
   line-height: 1.65;
 }
 

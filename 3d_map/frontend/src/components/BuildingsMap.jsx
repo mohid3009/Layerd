@@ -378,12 +378,16 @@ export default function BuildingsMap({
     }
   }, [renderFeatures, selectedId, unitsVersion, mapFloorGap])
 
-  // frame the saved city whenever the underlying data set changes
+  // frame the saved city only when initially loading the data set
+  const initialFramedRef = useRef(false)
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !loadedRef.current) return
+    if (!map || !loadedRef.current || initialFramedRef.current) return
     const bb = bboxOf(features)
-    if (bb) map.fitBounds(bb, { padding: 60, duration: 1200, maxZoom: 17, bearing: map.getBearing(), pitch: map.getPitch() })
+    if (bb) {
+      map.fitBounds(bb, { padding: 60, duration: 1200, maxZoom: 17, bearing: map.getBearing(), pitch: map.getPitch() })
+      initialFramedRef.current = true
+    }
   }, [features])
 
   // selection highlight + zoom-to-building: the WHOLE selected building is

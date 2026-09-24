@@ -1,47 +1,108 @@
-// deterministic pseudo-random vegetation dots
-function dots() {
-  const out = []
-  let seed = 9
-  const rnd = () => {
-    seed = (seed * 1103515245 + 12345) % 2147483648
-    return seed / 2147483648
-  }
-  for (let i = 0; i < 90; i++) {
-    out.push([20 + rnd() * 360, 15 + rnd() * 210, 1 + rnd() * 1.6])
-  }
-  return out
-}
-const DOTS = dots()
+import { useEffect, useMemo, useRef } from 'react'
+import { AttributionControl, Map as MapLibreMap, NavigationControl } from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
 
-// Styled placeholder "map" — vegetation dots, road curves, a white building
-// footprint, and an optional dashed accent highlight over one unit.
-export default function MapInset({ highlightUnit = false, ulpin }) {
+const MAP_STYLE = {
+  version: 8,
+  sources: {
+    imagery: {
+      type: 'raster',
+      tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: '© Esri, Maxar, Earthstar Geographics',
+    },
+    property: {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    },
+  },
+  layers: [
+    { id: 'imagery', type: 'raster', source: 'imagery' },
+    {
+      id: 'property-fill',
+      type: 'fill',
+      source: 'property',
+      paint: { 'fill-color': '#176B55', 'fill-opacity': 0.42 },
+    },
+    {
+      id: 'property-outline',
+      type: 'line',
+      source: 'property',
+      paint: { 'line-color': '#FFFFFF', 'line-width': 3 },
+    },
+  ],
+}
+
+function boundsForGeometry(geometry) {
+  const coordinates = geometry?.type === 'Polygon'
+    ? geometry.coordinates.flat()
+    : geometry?.type === 'MultiPolygon'
+      ? geometry.coordinates.flat(2)
+      : []
+  if (!coordinates.length) return null
+
+  const bounds = coordinates.reduce(
+    (result, [longitude, latitude]) => result.extend([longitude, latitude]),
+    [[coordinates[0][0], coordinates[0][1]], [coordinates[0][0], coordinates[0][1]]],
+  )
+  return bounds
+}
+
+export default function MapInset({ geometry, highlightUnit = false, ulpin, address, label }) {
+  const containerRef = useRef(null)
+  const mapRef = useRef(null)
+  const propertyFeature = useMemo(
+    () => (geometry ? { type: 'Feature', properties: {}, geometry } : null),
+    [geometry],
+  )
+
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return undefined
+
+    const map = new MapLibreMap({
+      container: containerRef.current,
+      style: MAP_STYLE,
+      center: [80.23, 13.04],
+      zoom: 15,
+      attributionControl: false,
+      interactive: false,
+    })
+    map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
+    map.addControl(new AttributionControl({ compact: true }), 'bottom-right')
+    mapRef.current = map
+
+    return () => {
+      map.remove()
+      mapRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !propertyFeature) return
+
+    const update = () => {
+      map.resize()
+      const source = map.getSource('property')
+      if (source) source.setData({ type: 'FeatureCollection', features: [propertyFeature] })
+      const bounds = boundsForGeometry(propertyFeature.geometry)
+      if (bounds) map.fitBounds(bounds, { padding: 48, maxZoom: 18, duration: 0 })
+    }
+
+    if (map.isStyleLoaded()) update()
+    else map.once('load', update)
+  }, [propertyFeature])
+
   return (
-    <div className="relative rounded-[14px] overflow-hidden border border-line">
-      <svg viewBox="0 0 400 240" className="w-full block">
-        <rect width="400" height="240" fill="#EAF0E6" />
-        {DOTS.map(([x, y, r], i) => (
-          <circle key={i} cx={x} cy={y} r={r} fill="#CBDCC4" />
-        ))}
-        <path d="M-20 190 C 120 150, 240 220, 420 140" stroke="#D8D4C8" strokeWidth="18" fill="none" />
-        <path d="M-20 190 C 120 150, 240 220, 420 140" stroke="#FFFFFF" strokeWidth="2" strokeDasharray="10 8" fill="none" />
-        <path d="M60 -10 C 90 80, 40 160, 110 250" stroke="#D8D4C8" strokeWidth="14" fill="none" />
-        <polygon points="150,70 300,55 320,150 170,175" fill="#FFFFFF" stroke="#2B2E33" strokeWidth="2.5" />
-        <line x1="225" y1="63" x2="232" y2="162" stroke="#C9CBD1" strokeWidth="1.5" />
-        <line x1="152" y1="122" x2="318" y2="103" stroke="#C9CBD1" strokeWidth="1.5" />
-        {highlightUnit && (
-          <polygon
-            points="225,63 300,55 318,103 232,122"
-            fill="rgba(214,66,58,0.15)"
-            stroke="#D6423A"
-            strokeWidth="2"
-            strokeDasharray="6 4"
-          />
-        )}
-      </svg>
-      <div className="absolute bottom-2.5 left-2.5 bg-surface/95 border border-line rounded-full px-3 py-1 text-[11px] font-id text-ink">
-        Parcel {ulpin}
+    <div className="property-map-inset">
+      <div ref={containerRef} className="property-map-canvas" aria-label={`Map showing ${address || label || 'property location'}`} />
+      <div className="property-map-label">
+        {label && <div className="property-map-title">{label}</div>}
+        {address && <div className="property-map-address">{address}</div>}
+        <div className="property-map-ulpin">Parcel {ulpin}</div>
       </div>
+      {highlightUnit && <span className="property-map-badge">LIVE MAP</span>}
     </div>
   )
 }

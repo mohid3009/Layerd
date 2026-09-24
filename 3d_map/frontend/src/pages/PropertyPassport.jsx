@@ -39,7 +39,7 @@ export default function PropertyPassport() {
     return (
       <div className="max-w-[720px] mx-auto p-6">
         <Breadcrumb current="Property Passport" />
-        <div className="bg-white border border-[#E4E7EC] rounded-[14px] p-8 text-center text-sm text-[#5C6675] mt-4 shadow-sm">
+        <div className="bg-white border border-[#E4E7EC] rounded-[14px] p-8 text-center text-sm text-[#1C2530] mt-4 shadow-sm">
           <p className="text-base font-bold text-[#1C2530] mb-2">Property Record Not Found</p>
           <p className="mb-4">No 3D unit record exists with identifier &ldquo;{id}&rdquo;.</p>
           <Link
@@ -73,7 +73,9 @@ export default function PropertyPassport() {
         {/* View Mode Toggle: Formal Indian Govt Deed vs Interactive 3D Passport */}
         <div className="flex items-center bg-[#E2E8F0] p-1 rounded-xl gap-1 border border-[#CBD5E1]">
           <button
+            type="button"
             onClick={() => setViewMode('deed')}
+            aria-pressed={viewMode === 'deed'}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all ${
               viewMode === 'deed'
                 ? 'bg-white text-[#8B6508] shadow-xs'
@@ -83,7 +85,9 @@ export default function PropertyPassport() {
             <Stamp size={13} /> Formal E-Stamp Deed
           </button>
           <button
+            type="button"
             onClick={() => setViewMode('dashboard')}
+            aria-pressed={viewMode === 'dashboard'}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all ${
               viewMode === 'dashboard'
                 ? 'bg-white text-[#4C5BD4] shadow-xs'
@@ -104,7 +108,7 @@ export default function PropertyPassport() {
           </button>
           <button
             onClick={() => navigate(`/portal/report/${unit.id}`)}
-            className="btn tiny inline-flex items-center gap-1.5 text-[#8A6410] border-[#E4E7EC] hover:bg-amber-50"
+            className="btn tiny inline-flex items-center gap-1.5 text-[#8A6410] border-[#F0DCAE] hover:bg-[#FDF4E3]"
             title="File dispute if details do not match"
           >
             <AlertTriangle size={13} /> Report Problem
@@ -346,7 +350,7 @@ export default function PropertyPassport() {
                 <span className="text-[10px] text-[#D4AF37] font-mono">BLOCKCHAIN LEDGER</span>
               </div>
               <div className="p-4 bg-[#FFFDF8] space-y-2.5 font-mono text-xs">
-                <div className="p-2.5 bg-white rounded border-l-4 border-[#166534] border border-[#E2E8F0]">
+                <div className="p-2.5 bg-white rounded border border-[#E2E8F0] border-l-4 border-l-[#166534]">
                   <div className="flex items-center justify-between text-[11px] text-[#554114] mb-1 font-sans">
                     <span className="font-bold text-[#1E293B]">BLOCK #3 · 3D ULPIN VOLUMETRIC REGISTRATION</span>
                     <span>2026-09-02 14:10 UTC</span>
@@ -359,7 +363,7 @@ export default function PropertyPassport() {
                   </div>
                 </div>
 
-                <div className="p-2.5 bg-white rounded border-l-4 border-[#4C5BD4] border border-[#E2E8F0]">
+                <div className="p-2.5 bg-white rounded border border-[#E2E8F0] border-l-4 border-l-[#4C5BD4]">
                   <div className="flex items-center justify-between text-[11px] text-[#554114] mb-1 font-sans">
                     <span className="font-bold text-[#1E293B]">BLOCK #2 · SPATIAL SURVEY CERTIFICATION</span>
                     <span>2026-08-20 09:30 UTC</span>
@@ -372,7 +376,7 @@ export default function PropertyPassport() {
                   </div>
                 </div>
 
-                <div className="p-2.5 bg-white rounded border-l-4 border-[#8B6508] border border-[#E2E8F0]">
+                <div className="p-2.5 bg-white rounded border border-[#E2E8F0] border-l-4 border-l-[#8B6508]">
                   <div className="flex items-center justify-between text-[11px] text-[#554114] mb-1 font-sans">
                     <span className="font-bold text-[#1E293B]">BLOCK #1 · GENESIS TITLE REGISTRATION</span>
                     <span>2024-11-14 11:20 UTC</span>
@@ -439,7 +443,7 @@ export default function PropertyPassport() {
                 <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#A5B4FC]">
                   Government of India · National Urban 3D Cadastre
                 </div>
-                <h1 className="text-lg font-extrabold text-white tracking-tight flex items-center gap-2 mt-0.5">
+                <h1 className="text-lg font-extrabold text-white tracking-tight flex items-center gap-2 mt-0.5 flex-wrap">
                   Digital Property Passport
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-[#34D399]/20 text-[#34D399] border border-[#34D399]/40 px-2.5 py-0.5 rounded-full">
                     <ShieldCheck size={12} /> VERIFIED TITLE
@@ -458,35 +462,35 @@ export default function PropertyPassport() {
           <div className="p-6 bg-white border-b border-[#E4E7EC]">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="min-w-0">
-                <div className="text-xs uppercase font-semibold tracking-wider text-[#5C6675] mb-1">
+                <div className="text-xs uppercase font-semibold tracking-wider text-[#1C2530] mb-1">
                   {b.name}
                 </div>
                 <div className="text-2xl font-black text-[#1C2530] tracking-tight flex items-center gap-2">
                   {unit.unitLabel}
-                  <span className="text-sm font-medium text-[#5C6675]">
+                  <span className="text-sm font-medium text-[#1C2530]">
                     ({ordinal(unit.floor)} Floor)
                   </span>
                 </div>
-                <div className="text-xs text-[#5C6675] mt-1 flex items-center gap-2">
+                <div className="text-xs text-[#1C2530] mt-1 flex items-center gap-2">
                   <span>{b.address}</span>
                 </div>
               </div>
 
               {/* ULPIN Copy Badge */}
-              <div className="bg-[#F8F9FA] border border-[#E4E7EC] rounded-[12px] p-3 shrink-0 flex flex-col items-end">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-[#5C6675] block mb-1">
+              <div className="bg-[#F9FAFB] border border-[#E4E7EC] rounded-[12px] p-3 w-full sm:w-auto min-w-0 flex flex-col items-start sm:items-end">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-[#1C2530] block mb-1">
                   3D ULPIN (National Spatial ID)
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="font-id text-[13px] font-semibold text-[#4C5BD4]">
+                  <span className="font-id text-[13px] font-semibold text-[#4C5BD4] min-w-0 break-all">
                     {showFull ? unit.ulpin : `${unit.ulpin.slice(0, 22)}…`}
                   </span>
                   <button
                     onClick={copyUlpin}
-                    className="p-1.5 rounded-md hover:bg-black/5 text-[#5C6675] hover:text-[#1C2530] transition-colors"
+                    className="p-1.5 rounded-md hover:bg-black/5 text-[#1C2530] hover:text-[#1C2530] transition-colors"
                     title="Copy full ULPIN"
                   >
-                    {copied ? <Check size={14} className="text-green" /> : <Copy size={14} />}
+                    {copied ? <Check size={14} className="text-[#1B7A4A]" /> : <Copy size={14} />}
                   </button>
                 </div>
                 <button
@@ -501,24 +505,24 @@ export default function PropertyPassport() {
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
               <div className="bg-[#FFFFFF] border border-[#E4E7EC] rounded-[10px] p-3 shadow-xs">
-                <span className="text-[10.5px] uppercase font-semibold text-[#5C6675] block">Carpet Area</span>
+                <span className="text-[10.5px] uppercase font-semibold text-[#1C2530] block">Carpet Area</span>
                 <span className="text-base font-bold text-[#1C2530]">{unit.area} m²</span>
-                <span className="text-[10px] text-[#5C6675] block">~{Math.round(unit.area * 10.764)} sq.ft</span>
+                <span className="text-[10px] text-[#1C2530] block">~{Math.round(unit.area * 10.764)} sq.ft</span>
               </div>
               <div className="bg-[#FFFFFF] border border-[#E4E7EC] rounded-[10px] p-3 shadow-xs">
-                <span className="text-[10.5px] uppercase font-semibold text-[#5C6675] block">Registered Owner</span>
+                <span className="text-[10.5px] uppercase font-semibold text-[#1C2530] block">Registered Owner</span>
                 <span className="text-base font-bold text-[#1C2530] truncate block">{unit.owner}</span>
                 <span className="text-[10px] text-[#1B7A4A] font-medium block">✓ Sole Freehold Title</span>
               </div>
               <div className="bg-[#FFFFFF] border border-[#E4E7EC] rounded-[10px] p-3 shadow-xs">
-                <span className="text-[10.5px] uppercase font-semibold text-[#5C6675] block">Encumbrance (NOC)</span>
+                <span className="text-[10.5px] uppercase font-semibold text-[#1C2530] block">Encumbrance (NOC)</span>
                 <span className="text-base font-bold text-[#1B7A4A]">Clear</span>
-                <span className="text-[10px] text-[#5C6675] block">No Bank Lien / Claims</span>
+                <span className="text-[10px] text-[#1C2530] block">No Bank Lien / Claims</span>
               </div>
               <div className="bg-[#FFFFFF] border border-[#E4E7EC] rounded-[10px] p-3 shadow-xs">
-                <span className="text-[10.5px] uppercase font-semibold text-[#5C6675] block">Property Tax</span>
+                <span className="text-[10.5px] uppercase font-semibold text-[#1C2530] block">Property Tax</span>
                 <span className="text-base font-bold text-[#1B7A4A]">Paid</span>
-                <span className="text-[10px] text-[#5C6675] block">FY 2026-27 Cleared</span>
+                <span className="text-[10px] text-[#1C2530] block">FY 2026-27 Cleared</span>
               </div>
             </div>
           </div>
@@ -530,7 +534,7 @@ export default function PropertyPassport() {
               className={`pb-3 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border-b-2 transition-all ${
                 activeTab === 'specs'
                   ? 'border-[#4C5BD4] text-[#4C5BD4]'
-                  : 'border-transparent text-[#5C6675] hover:text-[#1C2530]'
+                  : 'border-transparent text-[#1C2530] hover:text-[#1C2530]'
               }`}
             >
               <Layers size={14} /> 3D Spatial Specs &amp; Map
@@ -540,7 +544,7 @@ export default function PropertyPassport() {
               className={`pb-3 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border-b-2 transition-all ${
                 activeTab === 'encumbrance'
                   ? 'border-[#4C5BD4] text-[#4C5BD4]'
-                  : 'border-transparent text-[#5C6675] hover:text-[#1C2530]'
+                  : 'border-transparent text-[#1C2530] hover:text-[#1C2530]'
               }`}
             >
               <FileCheck size={14} /> Record of Rights &amp; Encumbrance
@@ -550,7 +554,7 @@ export default function PropertyPassport() {
               className={`pb-3 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border-b-2 transition-all ${
                 activeTab === 'ledger'
                   ? 'border-[#4C5BD4] text-[#4C5BD4]'
-                  : 'border-transparent text-[#5C6675] hover:text-[#1C2530]'
+                  : 'border-transparent text-[#1C2530] hover:text-[#1C2530]'
               }`}
             >
               <Hash size={14} /> Blockchain Audit Trail
@@ -562,7 +566,7 @@ export default function PropertyPassport() {
             {activeTab === 'specs' && (
               <div className="space-y-5">
                 <div className="bg-[#F9FAFB] border border-[#E4E7EC] rounded-[12px] p-4">
-                  <h3 className="text-xs uppercase tracking-wider font-bold text-[#5C6675] mb-3">
+                  <h3 className="text-xs uppercase tracking-wider font-bold text-[#1C2530] mb-3">
                     Volumetric &amp; Cadastral Dimensions
                   </h3>
                   <DetailGrid
@@ -595,7 +599,7 @@ export default function PropertyPassport() {
                 <div className="bg-[#F9FAFB] border border-[#E4E7EC] rounded-[12px] p-5">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold text-[#1C2530]">Record of Rights (RoR) Certificate</h3>
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#1B7A4A] border border-emerald-200">
+                    <span className="chip status-valid">
                       Clear &amp; Marketable
                     </span>
                   </div>
@@ -615,21 +619,21 @@ export default function PropertyPassport() {
                 <div className="bg-[#F9FAFB] border border-[#E4E7EC] rounded-[12px] p-5">
                   <h3 className="text-sm font-bold text-[#1C2530] mb-3">No-Encumbrance Status (NOC)</h3>
                   <div className="space-y-2.5 text-xs">
-                    <div className="flex items-center justify-between p-2.5 bg-white rounded-[8px] border border-[#E4E7EC]">
+                    <div className="flex items-start justify-between gap-3 flex-wrap p-2.5 bg-white rounded-[8px] border border-[#E4E7EC]">
                       <span className="text-[#1C2530]">Mortgage / Bank Lien Search (Past 30 Years)</span>
-                      <span className="text-[#1B7A4A] font-bold">NIL (No registered encumbrance)</span>
+                      <span className="text-[#1B7A4A] font-bold sm:text-right">NIL (No registered encumbrance)</span>
                     </div>
-                    <div className="flex items-center justify-between p-2.5 bg-white rounded-[8px] border border-[#E4E7EC]">
+                    <div className="flex items-start justify-between gap-3 flex-wrap p-2.5 bg-white rounded-[8px] border border-[#E4E7EC]">
                       <span className="text-[#1C2530]">Civil Court Lis Pendens / Injunctions</span>
-                      <span className="text-[#1B7A4A] font-bold">NONE FILED</span>
+                      <span className="text-[#1B7A4A] font-bold sm:text-right">NONE FILED</span>
                     </div>
-                    <div className="flex items-center justify-between p-2.5 bg-white rounded-[8px] border border-[#E4E7EC]">
+                    <div className="flex items-start justify-between gap-3 flex-wrap p-2.5 bg-white rounded-[8px] border border-[#E4E7EC]">
                       <span className="text-[#1C2530]">Municipal Property Tax Dues</span>
-                      <span className="text-[#1B7A4A] font-bold">ZERO DUES (Receipt #2026-CH-991)</span>
+                      <span className="text-[#1B7A4A] font-bold sm:text-right">ZERO DUES (Receipt #2026-CH-991)</span>
                     </div>
-                    <div className="flex items-center justify-between p-2.5 bg-white rounded-[8px] border border-[#E4E7EC]">
+                    <div className="flex items-start justify-between gap-3 flex-wrap p-2.5 bg-white rounded-[8px] border border-[#E4E7EC]">
                       <span className="text-[#1C2530]">Electricity &amp; Water Board Arrears</span>
-                      <span className="text-[#1B7A4A] font-bold">ACTIVE &amp; PAID</span>
+                      <span className="text-[#1B7A4A] font-bold sm:text-right">ACTIVE &amp; PAID</span>
                     </div>
                   </div>
                 </div>
@@ -642,57 +646,57 @@ export default function PropertyPassport() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-sm font-bold text-[#1C2530]">Cryptographic Audit Chain</h3>
-                      <p className="text-xs text-[#5C6675]">
+                      <p className="text-xs text-[#1C2530]">
                         Every transaction is hashed into an immutable append-only ledger
                       </p>
                     </div>
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#1B7A4A] border border-emerald-200 flex items-center gap-1">
+                    <span className="chip status-valid flex items-center gap-1">
                       <Check size={13} /> Chain Valid
                     </span>
                   </div>
 
                   <div className="space-y-3 font-mono text-xs">
                     {/* Block 3 */}
-                    <div className="p-3 bg-white rounded-[8px] border-l-4 border-[#34D399] border border-[#E4E7EC]">
-                      <div className="flex items-center justify-between text-[11px] text-[#5C6675] mb-1">
+                    <div className="p-3 bg-white rounded-[8px] border border-[#E4E7EC] border-l-4 border-l-[#1B7A4A]">
+                      <div className="flex items-center justify-between text-[11px] text-[#1C2530] mb-1">
                         <span className="font-bold text-[#1C2530]">BLOCK #3 · 3D ULPIN REGISTRATION</span>
                         <span>2026-09-02 14:10 UTC</span>
                       </div>
                       <div className="text-[#1C2530] font-sans text-xs mb-1">
                         Vertical volumetric boundaries minted and assigned to {unit.owner}
                       </div>
-                      <div className="text-[11px] text-[#5C6675]">
+                      <div className="text-[11px] text-[#1C2530]">
                         Prev Hash: <span className="text-[#4C5BD4]">9e8a71...4401</span> · Block Hash:{' '}
                         <span className="text-[#1B7A4A]">d7204f...b891</span>
                       </div>
                     </div>
 
                     {/* Block 2 */}
-                    <div className="p-3 bg-white rounded-[8px] border-l-4 border-[#4C5BD4] border border-[#E4E7EC]">
-                      <div className="flex items-center justify-between text-[11px] text-[#5C6675] mb-1">
+                    <div className="p-3 bg-white rounded-[8px] border border-[#E4E7EC] border-l-4 border-l-[#4C5BD4]">
+                      <div className="flex items-center justify-between text-[11px] text-[#1C2530] mb-1">
                         <span className="font-bold text-[#1C2530]">BLOCK #2 · SPATIAL SURVEY CERTIFICATION</span>
                         <span>2026-08-20 09:30 UTC</span>
                       </div>
                       <div className="text-[#1C2530] font-sans text-xs mb-1">
                         OpenStreetMap footprint topology validated with 0 overlap conflicts
                       </div>
-                      <div className="text-[11px] text-[#5C6675]">
+                      <div className="text-[11px] text-[#1C2530]">
                         Prev Hash: <span className="text-[#1A2B3C]">1a2b3c...9981</span> · Block Hash:{' '}
                         <span className="text-[#4C5BD4]">9e8a71...4401</span>
                       </div>
                     </div>
 
                     {/* Block 1 */}
-                    <div className="p-3 bg-white rounded-[8px] border-l-4 border-gray-400 border border-[#E4E7EC]">
-                      <div className="flex items-center justify-between text-[11px] text-[#5C6675] mb-1">
+                    <div className="p-3 bg-white rounded-[8px] border border-[#E4E7EC] border-l-4 border-l-[#98A2B3]">
+                      <div className="flex items-center justify-between text-[11px] text-[#1C2530] mb-1">
                         <span className="font-bold text-[#1C2530]">BLOCK #1 · GENESIS TITLE REGISTRATION</span>
                         <span>2024-11-14 11:20 UTC</span>
                       </div>
                       <div className="text-[#1C2530] font-sans text-xs mb-1">
                         Sale Deed executed at SRO T. Nagar · Title conveyed to {unit.owner}
                       </div>
-                      <div className="text-[11px] text-[#5C6675]">
-                        Prev Hash: <span className="text-[#5C6675]">000000...0000</span> · Block Hash:{' '}
+                      <div className="text-[11px] text-[#1C2530]">
+                        Prev Hash: <span className="text-[#1C2530]">000000...0000</span> · Block Hash:{' '}
                         <span className="text-[#4C5BD4]">1a2b3c...9981</span>
                       </div>
                     </div>
