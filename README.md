@@ -1,6 +1,6 @@
 # Layerd
 
-**One parcel. Every dimension.** A 3D cadastral system that gives unique IDs to land parcels *and* to the vertical units above and below them: flats, basements, and shared space. Built for **SIH 2026 · SIH26095** (3D ULPIN variant, Dept. of Land Resources).
+**One parcel. Every dimension.** A 3D cadastral system that gives unique IDs to land parcels *and* to the vertical units above and below them: flats, basements, and shared space. Built for **SIH 2026 · SIH26011** (3D ULPIN variant, Dept. of Land Resources).
 
 India's ULPIN identifies a 2D plot, so a 20-storey tower and an empty plot look the same at the ID level. Layerd measures real buildings from LiDAR, extrudes them in 3D, and derives a ULPIN for every floor and unit, with ownership and role-based editing on top.
 
