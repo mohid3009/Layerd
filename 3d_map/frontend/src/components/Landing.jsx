@@ -176,7 +176,7 @@ function Hero({ openLogin }) {
           className="text-[11px] tracking-[0.24em] uppercase text-[#86868B]"
           {...heroPop(0.08, 0.9)}
         >
-          SIH26095 · Smart India Hackathon 2026
+          SIH26011 · Smart India Hackathon 2026
         </motion.p>
         <motion.h1
           className="mt-6 text-[clamp(52px,8.5vw,110px)] leading-[1.01] font-bold tracking-[-0.04em] text-white"
@@ -377,7 +377,7 @@ function FooterCta({ openLogin }) {
             Ownership, in every dimension.
           </h2>
           <p className="mt-6 text-[#86868B] text-[15px] leading-[1.7]">
-            Layerd — built for SIH26095. Seed data from real OpenStreetMap footprints in Adyar, Chennai.
+            Layerd — built for SIH26011. Seed data from real OpenStreetMap footprints in Adyar, Chennai.
           </p>
           <div className="mt-10 flex gap-4 justify-center flex-wrap">
             <PillPrimary onClick={() => openLogin('citizen')}>Launch the demo</PillPrimary>
@@ -388,7 +388,7 @@ function FooterCta({ openLogin }) {
       <div className="silver-line" />
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 pt-6 text-[11px] text-[#86868B]">
         <span>Team Layerd</span>
-        <span className="font-mono">SIH26095 · 3D ULPIN</span>
+        <span className="font-mono">SIH26011 · 3D ULPIN</span>
         <a href="https://github.com/" className="hover:text-white transition-colors duration-300">GitHub</a>
       </div>
     </footer>
